@@ -21,6 +21,10 @@ class StudentController extends Controller
         return view('student.index', compact('id', 'school'));
     }
 
+    public function showStudents() {
+        return view('student.showAllStudents');
+    }
+
     public function getStudents($id)
     {
         $students = Student::with('school', 'creator')
@@ -190,24 +194,39 @@ class StudentController extends Controller
         ]);
 
         $student = Student::findOrFail($id);
-
+        $originalValue = $student->{$request->field};
         $name = $student->name;
-
         $school = School::find($student->school_id);
-        
+
         if ($request->field === 'dob') {
             try {
-                $student->dob = \Carbon\Carbon::createFromFormat('d/m/Y', $request->value)->format('Y-m-d');
+                $newDob = \Carbon\Carbon::createFromFormat('d/m/Y', $request->value)->format('Y-m-d');
             } catch (\Exception $e) {
                 return response()->json(['error' => 'Invalid date format. Use DD/MM/YYYY'], 422);
             }
+            
+            if ($student->dob === $newDob) {
+                return response()->json(['info' => 'Nothing was updated. Value is the same.'], 200);
+            }
+
+            $student->dob = $newDob;
         } else {
+            if ($student->{$request->field} === $request->value) {
+                return response()->json(['info' => 'Nothing was updated. Value is the same.'], 200);
+            }
+
             $student->{$request->field} = $request->value;
         }
 
+        dd($student->dob, $request->value);
         $student->updated_by = auth()->id();
         $student->save();
-        ActivityLogger::log('Update Student', 'Updated ' . $request->field . ' of student ' . ucwords($name) . ' of ' . $school->school_name);
+
+        ActivityLogger::log(
+            'Update Student',
+            'Updated ' . $request->field . ' of student ' . ucwords($name) . ' of ' . $school->school_name
+        );
+
         return response()->json(['message' => 'Updated successfully']);
     }
 
@@ -283,6 +302,87 @@ class StudentController extends Controller
         return redirect()->back()->with('success', 'Excel imported successfully.');
     }
 
+    public function getAllStudents(Request $request)
+    {
+        if ($request->ajax()) {
+            $schools = Student::select(
+                    'students.*',
+                    'schools.school_name as school_name',
+                    'districts.name as district_name',
+                    'blocks.name as block_name',
+                    'clusters.name as cluster_name',
+                    'users.name as creator_name',
+                )
+                ->leftJoin('schools', 'schools.id', '=', 'students.school_id')
+                ->leftJoin('districts', 'schools.district_id', '=', 'districts.id')
+                ->leftJoin('blocks', 'schools.block_id', '=', 'blocks.id')
+                ->leftJoin('clusters', 'schools.cluster_id', '=', 'clusters.id')
+                ->leftJoin('users', 'students.created_by', '=', 'users.id');
 
+            return DataTables::of($schools)
+                ->filterColumn('status', function ($query, $keyword) {
+                    $keyword = strtolower(trim($keyword));
+
+                    if ($keyword === 'uploaded') {
+                        $query->where('status', 1);
+                    } elseif ($keyword === 'not uploaded') {
+                        $query->where('status', 0);
+                    } elseif (str_contains($keyword, 'uploaded') && !str_contains($keyword, 'not')) {
+                        $query->where('status', 1);
+                    } elseif (str_contains($keyword, 'not')) {
+                        $query->where('status', 0);
+                    }
+                })
+                ->addIndexColumn()
+                ->editColumn('name', fn($row) =>
+                    '<span class="editable" contenteditable="true" data-id="'.$row->id.'" data-field="name">'.e($row->name).'</span>')
+                ->editColumn('class', fn($row) =>
+                    '<span class="editable" contenteditable="true" data-id="'.$row->id.'" data-field="class">'.e($row->class).'</span>')
+                ->editColumn('dob', fn($row) =>
+                '<span class="editable" contenteditable="true" data-id="'.$row->id.'" data-field="dob">'.e($row->dob ? date('d/m/Y', strtotime($row->dob)) : 'N/A').'</span>')
+                ->editColumn('photo', fn($row) => $row->photo 
+                ? '<img src="'.asset('uploads/images/students/' . $row->photo).'" width="40">' 
+                : 'N/A')
+                ->editColumn('school', function ($row) {
+                    return '<a href="'.route('school.students', $row->school_id).'" class="btn btn-sm btn-link">'.$row->school_name.'</a>';
+                })
+                ->editColumn('district', fn($row) => $row->district_name ?? 'N/A')
+                ->editColumn('block', fn($row) => $row->block_name ?? 'N/A')
+                ->editColumn('cluster', fn($row) => $row->cluster_name ?? 'N/A')
+                ->editColumn('status', fn($row) => $row->status
+                    ? '<span class="badge bg-success">Uploaded</span>'
+                    : '<span class="badge bg-danger">Not Uploaded</span>')
+                ->editColumn('created_by', fn($row) => $row->creator?->name ?? 'N/A')
+                ->editColumn('created_at', fn($row) => $row->created_at?->format('d M Y h:i A') ?? '')
+                ->editColumn('updated_at', fn($row) => $row->updated_at?->format('d M Y h:i A') ?? '')
+                ->addColumn('action', function ($row) {
+                    $viewBtn = '';
+                    if (!empty($row->photo) && file_exists(public_path('uploads/images/students/' . $row->photo))) {
+                        $viewBtn = '<a href="'.asset('uploads/images/students/' . $row->photo).'" class="btn btn-sm btn-primary view-photo" data-fancybox="gallery" data-caption="'.e($row->name).'">
+                                        <i class="bi bi-image"></i>
+                                    </a>';
+                    }
+
+                    $downloadBtn = (!empty($row->photo) && file_exists(public_path('uploads/images/students/' . $row->photo)))
+                        ? '<a href="/uploads/images/students/'.$row->photo.'" download class="btn btn-sm btn-success"><i class="bi bi-download"></i></a>'
+                        : '';
+
+                    $uploadBtn = '<button data-id="' . $row->id . '" class="btn btn-sm btn-info upload-photo"><i class="bi bi-upload"></i></button>';
+
+                    return '
+                        <div class="d-inline-flex gap-1">
+                            ' . $viewBtn . $downloadBtn . $uploadBtn . '
+                            <form action="' . route('students.delete', $row->id) . '" method="POST" class="d-inline delete-form">
+                                ' . csrf_field() . method_field('DELETE') . '
+                                <button type="submit" class="btn btn-sm btn-danger">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </div>';
+                })
+                ->rawColumns(['name', 'class', 'dob', 'photo', 'school', 'status', 'action'])
+                ->make(true);
+        }
+    }
     
 }

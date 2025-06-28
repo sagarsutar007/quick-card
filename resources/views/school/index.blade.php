@@ -42,10 +42,10 @@
                         <th>Block</th>
                         <th>Cluster</th>
                         <th>Data</th>
-                        <!-- <th>Photos Count</th>
+                        <th>Photos</th>
                         <th>Send ID Card</th>
                         <th>Amount</th>
-                        <th>Payment Details</th> -->
+                        <th>Payment Details</th>
                         <th>Description</th>
                         <th>Status</th>
                         <th>Created By</th>
@@ -57,6 +57,46 @@
             </table>
         </div>
     </div>    
+
+    <!-- Edit School Modal -->
+    <div class="modal fade" id="editSchoolModal" tabindex="-1" aria-labelledby="editSchoolModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <form id="editSchoolForm" method="POST">
+            @csrf
+            @method('PUT')
+            <div class="modal-content">
+                <div class="modal-header">
+                <h5 class="modal-title" id="editSchoolModalLabel">Edit School Info</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body">
+                <input type="hidden" name="school_id" id="edit_school_id">
+
+                <div class="mb-3">
+                    <label for="id_card" class="form-label">ID Card</label>
+                    <input type="text" class="form-control" name="id_card" id="edit_id_card">
+                </div>
+
+                <div class="mb-3">
+                    <label for="amount" class="form-label">Amount</label>
+                    <input type="text" class="form-control" name="amount" id="edit_amount">
+                </div>
+
+                <div class="mb-3">
+                    <label for="payment_details" class="form-label">Payment Details</label>
+                    <textarea class="form-control" name="payment_details" id="edit_payment_details" rows="3"></textarea>
+                </div>
+                </div>
+
+                <div class="modal-footer">
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </div>
+            </form>
+        </div>
+    </div>
+
 @endsection
 
 @section('js')
@@ -117,11 +157,11 @@
                 { data: 'block', name: 'blocks.name' },
                 { data: 'cluster', name: 'clusters.name' },
                 { data: 'students_count', name: 'students_count', orderable: false, searchable: false},
-                // { data: 'photo_count', name: 'photo_count' },
-                // { data: 'id_card', name: 'id_card' },
-                // { data: 'amount', name: 'amount' },
-                // { data: 'payment_details', name: 'payment_details' },
-                { data: 'description', name: 'description' },
+                { data: 'photo_count', name: 'photo_count', orderable: false, searchable: false},
+                { data: 'id_card', name: 'id_card' },
+                { data: 'amount', name: 'amount' },
+                { data: 'payment_details', name: 'payment_details' },
+                { data: 'description', name: 'description', orderable: false, searchable: false },
                 { data: 'status', name: 'status' },
                 { data: 'created_by', name: 'created_by' },
                 { data: 'created_at', name: 'created_at' },
@@ -169,6 +209,24 @@
             } else {
                 $('#block_id').html('<option value="">Select Block</option>');
             }
+        });
+
+        $('#editSchoolModal').on('show.bs.modal', function (event) {
+            const button = $(event.relatedTarget);
+
+            const id = button.data('id');
+            const id_card = button.data('id_card');
+            const amount = button.data('amount');
+            const payment = button.data('payment');
+
+            const modal = $(this);
+
+            modal.find('#edit_school_id').val(id);
+            modal.find('#edit_id_card').val(id_card || '');
+            modal.find('#edit_amount').val(amount || '');
+            modal.find('#edit_payment_details').val(payment || '');
+
+            $('#editSchoolForm').attr('action', `/schools/${id}`);
         });
     });
 </script>

@@ -67,6 +67,7 @@ Route::middleware(AuthenticateManagement::class)->group(function () {
     Route::post('schools/{school}/authority', [SchoolController::class, 'saveAuthority'])->name('schools.saveAuthority');
     Route::get('schools/get-data', [SchoolController::class, 'getAll'])->name('schools.getAll');
     Route::get('schools/{id}/edit', [ClusterController::class, 'editSchool'])->name('schools.edit');
+    Route::put('/schools/{id}', [SchoolController::class, 'update'])->name('schools.update');
     Route::delete('schools/{id}/delete', [ClusterController::class, 'deleteSchool'])->name('schools.delete');
     Route::get('schools/{id}/view', [StudentController::class, 'index'])->name('school.students');
     Route::get('schools/{id}/students', [StudentController::class, 'getStudents'])->name('school.students.get');
@@ -80,6 +81,8 @@ Route::middleware(AuthenticateManagement::class)->group(function () {
     Route::post('/students/{id}/inline-update', [StudentController::class, 'inlineUpdate']);
     Route::get('/students/{id}/photos', [StudentController::class, 'getPhotos']);
     Route::post('/students/import-excel', [StudentController::class, 'importExcel'])->name('students.importExcel');
+    Route::get('/all-students', [StudentController::class, 'getAllStudents'])->name('students.getAll');
+
 
 });
 

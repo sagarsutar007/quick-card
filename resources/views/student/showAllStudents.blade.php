@@ -1,23 +1,18 @@
 @extends('layouts.main')
 
-@section('title', 'Students')
+@section('title', 'All Students')
 
 @section('content')
     <div class="card bg-light-info shadow-none position-relative overflow-hidden" id="full-width-container">
         <div class="card-body px-4 py-3">
             <div class="row align-items-center">
                 <div class="col-9">
-                    <h4 class="fw-semibold mb-8">Students</h4>
+                    <h4 class="fw-semibold mb-8">All Students</h4>
                     <nav aria-label="breadcrumb">
-                    <ol class="breadcrumb">
-                        <li class="breadcrumb-item"><a class="text-muted" href="{{ route('management.dashboard') }}">Dashboard</a></li>
-                        @if(!empty($school))
-                        <li class="breadcrumb-item"><a class="text-muted" href="{{ route('management.schools') }}">Schools</a></li>
-                        <li class="breadcrumb-item"><a class="text-muted">{{ $school->school_name }}</a></li>
-                        @else
-                        <li class="breadcrumb-item" aria-current="page">Students</li>
-                        @endif
-                    </ol>
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a class="text-muted" href="{{ route('management.dashboard') }}">Dashboard</a></li>
+                            <li class="breadcrumb-item" aria-current="page">Students</li>
+                        </ol>
                     </nav>
                 </div>
                 <div class="col-3">
@@ -32,14 +27,11 @@
     <div class="card overflow-hidden">
         <div class="card-body">
             <div class="d-flex align-items-center justify-content-between">
-                <h5 class="mb-3">Students</h5>
+                <h5 class="mb-3">All Students</h5>
                 <div class="btn-group">
-                    <a class="btn btn-primary mb-3" href="{{ route('student.add', ['school_id' => $school->id]) }}">
+                    <a class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#addNewModal">
                         <i class="ti ti-plus fs-5 me-2"></i> Add New
                     </a>
-                    <button class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#excelModal">
-                        <i class="ti ti-file-spreadsheet fs-5 me-2"></i> Import Excel
-                    </button>
                 </div>
                 
             </div>
@@ -52,6 +44,10 @@
                         <th>Class</th>
                         <th>DOB</th>
                         <th>Photo</th>
+                        <th>School</th>
+                        <th>Cluster</th>
+                        <th>Block</th>
+                        <th>District</th>
                         <th>Status</th>
                         <th>Created By</th>
                         <th>Created On</th>
@@ -85,34 +81,26 @@
         </div>
     </div>
 
-    <!-- Excel Import Modal -->
-    <div class="modal fade" id="excelModal" tabindex="-1" aria-labelledby="excelModalLabel" aria-hidden="true">
+    <div class="modal fade" id="addNewModal" tabindex="-1" aria-labelledby="addNewModalLabel" aria-hidden="true">
         <div class="modal-dialog">
-            <form method="POST" action="{{ route('students.importExcel') }}" enctype="multipart/form-data">
-                @csrf
-                <input type="hidden" name="school_id" value="{{ $school->id }}">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="excelModalLabel">Import Students from Excel</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-
-                        <div class="mb-3">
-                            <label for="excel_file" class="form-label">Select Excel File (.xlsx or .xls)</label>
-                            <input class="form-control" type="file" name="excel_file" id="excel_file" accept=".xls,.xlsx" required>
-                            <div class="form-text">Only <strong>name, class, dob</strong> columns are required.</div>
-                        </div>
-
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary"><i class="bi bi-upload me-1"></i> Import</button>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addNewModalLabel">Add New Record</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <select id="schoolSelect" class="form-select" style="width: 100%"></select>
+                        <div class="mt-2 text-muted" id="lastSelectedSchool"></div>
                     </div>
                 </div>
-            </form>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" id="btnAddStudent">Add Student</button>
+                </div>
+            </div>
         </div>
     </div>
+
 
 @endsection
 
@@ -163,7 +151,7 @@
         $('#studentsTable').DataTable({
             processing: true,
             serverSide: true,
-            ajax: '/schools/{{ $id }}/students',
+            ajax: '/all-students',
             stateSave: true,
             dom: 'lBfrtip',
             lengthMenu: [[10, 25, 50, 100, -1], [ 10, 25, 50, 100, "All"]],
@@ -211,6 +199,10 @@
                 { data: 'class', name: 'class' },
                 { data: 'dob', name: 'dob' },
                 { data: 'photo', name: 'photo' },
+                { data: 'school', name: 'school' },
+                { data: 'cluster', name: 'cluster' },
+                { data: 'block', name: 'block' },
+                { data: 'district', name: 'district' },
                 { data: 'status', name: 'status' },
                 { data: 'created_by', name: 'created_by' },
                 { data: 'created_at', name: 'created_at' },
@@ -293,6 +285,55 @@
             });
         });
 
+        $('#schoolSelect').select2({
+            dropdownParent: $('#addNewModal'),
+            placeholder: 'Select a school',
+            ajax: {
+                url: '/api/schools',
+                dataType: 'json',
+                delay: 250,
+                data: function (params) {
+                    return {
+                        q: params.term 
+                    };
+                },
+                processResults: function (data) {
+                    return {
+                        results: data.map(school => ({
+                            id: school.id,
+                            text: school.school_name
+                        }))
+                    };
+                },
+                cache: true
+            }
+        });
+
+        const lastSchoolName = localStorage.getItem('last_school_name');
+        const lastSchoolId = localStorage.getItem('last_school_id');
+
+        if (lastSchoolName && lastSchoolId) {
+            $('#lastSelectedSchool').html(
+                `Recently used: <a href="/students/add?school_id=${lastSchoolId}" class="text-primary fw-bold">${lastSchoolName}</a>`
+            );
+        }
+
+        $('#schoolSelect').on('select2:select', function (e) {
+            const selected = e.params.data;
+            localStorage.setItem('last_school_id', selected.id);
+            localStorage.setItem('last_school_name', selected.text);
+
+            $('#lastSelectedSchool').html(
+                `Recently used: <a href="/students/add?school_id=${selected.id}" class="text-primary fw-bold">${selected.text}</a>`
+            );
+        });
+
+        $(document).on('click', "#btnAddStudent", function(){
+            const selected_id = $('#schoolSelect').val();
+            if (selected_id) {
+                window.location.href = "/students/add?school_id=" + selected_id;
+            }
+        });
 
     });
 </script>

@@ -128,59 +128,6 @@ $(function () {
 
 });
 
-/*change layout boxed/full */
-$(".full-width").click(function () {
-  $(".container-fluid").addClass("mw-100");
-  $(".full-width i").addClass("text-primary");
-  $(".boxed-width i").removeClass("text-primary");
-});
-$(".boxed-width").click(function () {
-  $(".container-fluid").removeClass("mw-100");
-  $(".full-width i").removeClass("text-primary");
-  $(".boxed-width i").addClass("text-primary");
-});
-
-/*Dark/Light theme*/
-$(".light-logo").hide();
-$(".dark-theme").click(function () {
-  $("nav.navbar-light").addClass("navbar-dark");
-  $(".dark-theme i").addClass("text-primary");
-  $(".light-theme i").removeClass("text-primary");
-  $(".light-logo").show();
-  $(".dark-logo").hide();
-});
-$(".light-theme").click(function () {
-  $("nav.navbar-light").removeClass("navbar-dark");
-  $(".dark-theme i").removeClass("text-primary");
-  $(".light-theme i").addClass("text-primary");
-  $(".light-logo").hide();
-  $(".dark-logo").show();
-});
-
-/*Card border/shadow*/
-$(".cardborder").click(function () {
-  $("body").addClass("cardwithborder");
-  $(".cardshadow i").addClass("text-dark");
-  $(".cardborder i").addClass("text-primary");
-});
-$(".cardshadow").click(function () {
-  $("body").removeClass("cardwithborder");
-  $(".cardborder i").removeClass("text-primary");
-  $(".cardshadow i").removeClass("text-dark");
-});
-
-$(".change-colors li a").click(function () {
-  $(".change-colors li a").removeClass("active-theme");
-  $(this).addClass("active-theme");
-});
-
-/*Theme color change*/
-function toggleTheme(value) {
-  $(".preloader").show();
-  var sheets = document.getElementById("themeColors");
-  sheets.href = value;
-  $(".preloader").fadeOut();
-}
 $(".preloader").fadeOut();
 
 

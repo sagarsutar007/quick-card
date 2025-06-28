@@ -96,7 +96,9 @@ class SchoolController extends Controller
                     'blocks.name as block_name',
                     'clusters.name as cluster_name',
                     'users.name as creator_name',
-                    DB::raw('(SELECT COUNT(*) FROM students WHERE students.school_id = schools.id) as students_count')
+                    DB::raw('(SELECT COUNT(*) FROM students WHERE students.school_id = schools.id) as students_count'),
+                    DB::raw('(SELECT COUNT(*) FROM students WHERE students.school_id = schools.id AND students.photo IS NOT NULL AND students.photo != "") as photo_count'),
+                    DB::raw('(SELECT COUNT(*) FROM students WHERE students.school_id = schools.id AND students.photo IS NULL OR students.photo = "") as no_photo_count')
                 )
                 ->leftJoin('districts', 'schools.district_id', '=', 'districts.id')
                 ->leftJoin('blocks', 'schools.block_id', '=', 'blocks.id')
@@ -116,6 +118,12 @@ class SchoolController extends Controller
                 ->editColumn('cluster', fn($row) => $row->cluster_name ?? 'N/A')
                 ->editColumn('description', fn($row) => $row->description)
                 ->editColumn('students_count', fn($row) => $row->students_count)
+                ->editColumn('photo_count', function ($row) {
+                    return '<span class="text-success fw-bold">'.$row->photo_count.'</span> / <span class="text-danger fw-bold">'.$row->no_photo_count.'</span>';
+                })
+                ->editColumn('id_card', fn($row) => $row->id_card ?? 'N/A')
+                ->editColumn('amount', fn($row) => $row->amount ?? 'N/A')
+                ->editColumn('payment_details', fn($row) => $row->payment_details ?? 'N/A')
                 ->editColumn('status', function ($row) {
                     return $row->status
                         ? '<span class="badge bg-success">Active</span>'
@@ -128,17 +136,36 @@ class SchoolController extends Controller
                     return '
                         <div class="d-inline-flex gap-1">
                             <a href="'.route('school.students', $row->id).'" class="btn btn-sm btn-success"><i class="bi bi-eye"></i></a>
-                            <a href="'.route('schools.edit', $row->id).'" class="btn btn-sm btn-info"><i class="bi bi-pencil"></i></a>
+                            <a href="#" class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#editSchoolModal" 
+                                data-id="'.$row->id.'" 
+                                data-id_card="'.e($row->id_card).'" 
+                                data-amount="'.e($row->amount).'" 
+                                data-payment="'.e($row->payment_details).'">
+                                <i class="bi bi-pencil"></i>
+                            </a>
                             <form action="'.route('schools.delete', $row->id).'" method="POST" class="d-inline delete-form">
                                 '.csrf_field().method_field('DELETE').'
                                 <button type="submit" class="btn btn-sm btn-danger"><i class="bi bi-trash"></i></button>
                             </form>
                         </div>';
                 })
-                ->rawColumns(['code', 'name', 'status', 'action'])
+                ->rawColumns(['code', 'name', 'status', 'photo_count', 'action'])
                 ->make(true);
         }
     }
 
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'id_card' => 'nullable|string',
+            'amount' => 'nullable|string',
+            'payment_details' => 'nullable|string',
+        ]);
+
+        $school = School::findOrFail($id);
+        $school->update($request->only('id_card', 'amount', 'payment_details'));
+        ActivityLogger::log('Update School', 'Updated ' . str_ireplace(' school', '', $school->school_name) . ' school\'s text fields!');
+        return redirect()->back()->with('success', 'School info updated successfully.');
+    }
 
 }

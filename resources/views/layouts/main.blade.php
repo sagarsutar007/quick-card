@@ -23,14 +23,12 @@
     <link rel="stylesheet" href="{{ asset('libs/select2/dist/css/select2.min.css') }}">
     <!-- Dropzone -->
     <link rel="stylesheet" href="{{ asset('libs/dropzone/dist/min/dropzone.min.css') }}">.
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
     <!-- Core Css -->
     <link rel="stylesheet" href="{{ asset('css/style-orange.min.css') }}" id="themeColors"/>
 
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
-
-
     <link rel="stylesheet" href="{{ asset('css/custom.css') }}">
-    @yield('css')
   </head>
   <body>
     <!-- Preloader -->
