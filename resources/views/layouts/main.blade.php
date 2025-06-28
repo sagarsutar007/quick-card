@@ -9,6 +9,7 @@
     <meta name="handheldfriendly" content="true" />
     <meta name="MobileOptimized" content="width" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <!--  Favicon -->
     <link rel="shortcut icon" type="image/png" href="{{ asset('images/logos/icon.png') }}" />
     <!-- Owl Carousel  -->
@@ -20,6 +21,8 @@
     <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
     <!-- Select2 -->
     <link rel="stylesheet" href="{{ asset('libs/select2/dist/css/select2.min.css') }}">
+    <!-- Dropzone -->
+    <link rel="stylesheet" href="{{ asset('libs/dropzone/dist/min/dropzone.min.css') }}">.
     <!-- Core Css -->
     <link rel="stylesheet" href="{{ asset('css/style-orange.min.css') }}" id="themeColors"/>
 
@@ -27,6 +30,7 @@
 
 
     <link rel="stylesheet" href="{{ asset('css/custom.css') }}">
+    @yield('css')
   </head>
   <body>
     <!-- Preloader -->
@@ -219,6 +223,12 @@
     <script src="{{ asset('js/app.min.js') }}"></script>
     <script src="{{ asset('js/app.init.js') }}"></script>
     <script src="{{ asset('js/sidebarmenu.js') }}"></script>
+    
+    <!-- Dropzone -->
+    <script src="{{ asset('libs/dropzone/dist/min/dropzone.min.js') }}"></script>
+
+    <!-- DataTables editables -->
+    <script src="{{ asset('libs/vanilla-datatables-editable/datatable.editable.min.js') }}"></script>
 
     <!-- DataTables core -->
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
@@ -235,6 +245,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+
+    <script src="{{ asset('js/plugins/mindmup-editabletable.js') }}"></script>
+    <script src="{{ asset('js/plugins/numeric-input-example.js') }}"></script>
 
     <script src="{{ asset('libs/select2/dist/js/select2.full.min.js') }}"></script>
     <script src="{{ asset('libs/select2/dist/js/select2.min.js') }}"></script>

@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Yajra\DataTables\Facades\DataTables;
+use Illuminate\Support\Facades\DB;
 
 use App\Helpers\ActivityLogger;
 use App\Models\Block;
@@ -13,6 +14,8 @@ use App\Models\Cluster;
 use App\Models\District;
 use App\Models\School;
 use App\Models\User;
+use App\Models\Student;
+
 
 class SchoolController extends Controller
 {
@@ -92,7 +95,8 @@ class SchoolController extends Controller
                     'districts.name as district_name',
                     'blocks.name as block_name',
                     'clusters.name as cluster_name',
-                    'users.name as creator_name'
+                    'users.name as creator_name',
+                    DB::raw('(SELECT COUNT(*) FROM students WHERE students.school_id = schools.id) as students_count')
                 )
                 ->leftJoin('districts', 'schools.district_id', '=', 'districts.id')
                 ->leftJoin('blocks', 'schools.block_id', '=', 'blocks.id')
@@ -101,12 +105,17 @@ class SchoolController extends Controller
 
             return DataTables::of($schools)
                 ->addIndexColumn()
-                ->editColumn('code', fn($row) => $row->school_code)
-                ->editColumn('name', fn($row) => $row->school_name)
+                ->editColumn('code', function ($row) {
+                    return '<a href="'.route('school.students', $row->id).'" class="btn btn-sm btn-link">'.$row->school_code.'</a>';
+                })
+                ->editColumn('name', function ($row) {
+                    return '<a href="'.route('school.students', $row->id).'" class="btn btn-sm btn-link">'.$row->school_name.'</a>';
+                })
                 ->editColumn('district', fn($row) => $row->district_name ?? 'N/A')
                 ->editColumn('block', fn($row) => $row->block_name ?? 'N/A')
                 ->editColumn('cluster', fn($row) => $row->cluster_name ?? 'N/A')
                 ->editColumn('description', fn($row) => $row->description)
+                ->editColumn('students_count', fn($row) => $row->students_count)
                 ->editColumn('status', function ($row) {
                     return $row->status
                         ? '<span class="badge bg-success">Active</span>'
@@ -118,7 +127,7 @@ class SchoolController extends Controller
                 ->addColumn('action', function ($row) {
                     return '
                         <div class="d-inline-flex gap-1">
-                            <a href="#" class="btn btn-sm btn-success"><i class="bi bi-eye"></i></a>
+                            <a href="'.route('school.students', $row->id).'" class="btn btn-sm btn-success"><i class="bi bi-eye"></i></a>
                             <a href="'.route('schools.edit', $row->id).'" class="btn btn-sm btn-info"><i class="bi bi-pencil"></i></a>
                             <form action="'.route('schools.delete', $row->id).'" method="POST" class="d-inline delete-form">
                                 '.csrf_field().method_field('DELETE').'
@@ -126,7 +135,7 @@ class SchoolController extends Controller
                             </form>
                         </div>';
                 })
-                ->rawColumns(['status', 'action'])
+                ->rawColumns(['code', 'name', 'status', 'action'])
                 ->make(true);
         }
     }

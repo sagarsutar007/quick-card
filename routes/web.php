@@ -68,7 +68,18 @@ Route::middleware(AuthenticateManagement::class)->group(function () {
     Route::get('schools/get-data', [SchoolController::class, 'getAll'])->name('schools.getAll');
     Route::get('schools/{id}/edit', [ClusterController::class, 'editSchool'])->name('schools.edit');
     Route::delete('schools/{id}/delete', [ClusterController::class, 'deleteSchool'])->name('schools.delete');
+    Route::get('schools/{id}/view', [StudentController::class, 'index'])->name('school.students');
+    Route::get('schools/{id}/students', [StudentController::class, 'getStudents'])->name('school.students.get');
+    Route::delete('students/{id}/delete', [StudentController::class, 'deleteStudent'])->name('students.delete');
+    Route::get('students/add', [StudentController::class, 'addStudent'])->name('student.add');
+    Route::post('students/add', [StudentController::class, 'saveStudent'])->name('student.save');
 
+    Route::post('/students/upload-photo', [StudentController::class, 'uploadPhoto'])->name('student.uploadPhoto');
+    Route::post('/students/upload-student-photo', [StudentController::class, 'uploadStudentPhoto'])->name('students.uploadStudentPhoto');
+
+    Route::post('/students/{id}/inline-update', [StudentController::class, 'inlineUpdate']);
+    Route::get('/students/{id}/photos', [StudentController::class, 'getPhotos']);
+    Route::post('/students/import-excel', [StudentController::class, 'importExcel'])->name('students.importExcel');
 
 });
 

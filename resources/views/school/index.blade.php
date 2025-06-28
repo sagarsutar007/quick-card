@@ -41,8 +41,8 @@
                         <th>District</th>
                         <th>Block</th>
                         <th>Cluster</th>
-                        <!-- <th>Data</th>
-                        <th>Photos Count</th>
+                        <th>Data</th>
+                        <!-- <th>Photos Count</th>
                         <th>Send ID Card</th>
                         <th>Amount</th>
                         <th>Payment Details</th> -->
@@ -64,9 +64,6 @@
     $(document).ready(function () {
 
         $("#full-width-container").parent().css('max-width', '100%');
-
-        // $('#schoolTable').DataTable();
-
 
         $('#schoolTable').DataTable({
             processing: true,
@@ -119,11 +116,11 @@
                 { data: 'district', name: 'districts.name' },
                 { data: 'block', name: 'blocks.name' },
                 { data: 'cluster', name: 'clusters.name' },
-                // { data: 'data', name: 'data' },
+                { data: 'students_count', name: 'students_count', orderable: false, searchable: false},
                 // { data: 'photo_count', name: 'photo_count' },
                 // { data: 'id_card', name: 'id_card' },
                 // { data: 'amount', name: 'amount' },
-                // { data: 'payement_details', name: 'payement_details' },
+                // { data: 'payment_details', name: 'payment_details' },
                 { data: 'description', name: 'description' },
                 { data: 'status', name: 'status' },
                 { data: 'created_by', name: 'created_by' },
