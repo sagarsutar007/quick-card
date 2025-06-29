@@ -13,7 +13,7 @@
                             <li class="breadcrumb-item"><a class="text-muted" href="{{ route('management.dashboard') }}">Dashboard</a></li>
                             @if(!empty($school))
                             <li class="breadcrumb-item"><a class="text-muted" href="{{ route('management.schools') }}">Schools</a></li>
-                            <li class="breadcrumb-item"><a class="text-muted">{{ $school->school_name }}</a></li>
+                            <li class="breadcrumb-item"><a class="text-muted" href="{{ route('school.students', $school->id) }}">{{ $school->school_name }}</a></li>
                             @else
                             <li class="breadcrumb-item" aria-current="page">Add Student</li>
                             @endif
@@ -37,13 +37,12 @@
             <form id="manageStudentForm" action="{{ route('student.save') }}" method="POST">
                 @csrf
                 <input type="hidden" name="student_id" id="student_id">
-
+                <input type="hidden" class="form-control" id="school_id" name="school_id" value="{{ $school->id}}">
                 <div class="row">
                     <div class="col-lg-3 col-md-4 col-sm-6">
-                        <input type="hidden" class="form-control" id="school_id" name="school_id" value="{{ $school->id}}" readonly>
                         <div class="form-floating mb-3">
-                            <input type="text" class="form-control" id="school_name" name="school_name" value="{{ $school->school_name}}" readonly>
-                            <label for="school_name">School Name</label>
+                            <input type="text" class="form-control" id="student_code" name="student_code" placeholder="Enter Student Code" autocomplete="off">
+                            <label for="student_code">Student Code</label>
                         </div>
                     </div>
                     <div class="col-lg-3 col-md-4 col-sm-6">

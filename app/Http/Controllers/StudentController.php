@@ -5,10 +5,13 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 
 use Illuminate\Support\Facades\Auth;
-use Yajra\DataTables\Facades\DataTables;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Validator;
 use Maatwebsite\Excel\Facades\Excel;
-use Illuminate\Support\Collection;
+use Yajra\DataTables\Facades\DataTables;
+use ZipArchive;
 
 use App\Helpers\ActivityLogger;
 use App\Models\School;
@@ -47,6 +50,8 @@ class StudentController extends Controller
                     $query->where('status', 0);
                 }
             })
+            ->addIndexColumn()
+            ->editColumn('student_code', fn($row) => $row->student_code)
             ->editColumn('name', fn($row) =>
                 '<span class="editable" contenteditable="true" data-id="'.$row->id.'" data-field="name">'.e($row->name).'</span>')
             ->editColumn('class', fn($row) =>
@@ -71,7 +76,7 @@ class StudentController extends Controller
                 }
 
                 $downloadBtn = (!empty($row->photo) && file_exists(public_path('uploads/images/students/' . $row->photo)))
-                    ? '<a href="/uploads/images/students/'.$row->photo.'" download class="btn btn-sm btn-success"><i class="bi bi-download"></i></a>'
+                    ? '<a href="'.route('students.downloadPhoto', $row->id).'" class="btn btn-sm btn-success"><i class="bi bi-download"></i></a>'
                     : '';
 
                 $uploadBtn = '<button data-id="' . $row->id . '" class="btn btn-sm btn-info upload-photo"><i class="bi bi-upload"></i></button>';
@@ -152,6 +157,7 @@ class StudentController extends Controller
             'dob'        => 'nullable|date',
             'school_id'  => 'required|integer|exists:schools,id',
             'photo'      => 'nullable|string|max:255',
+            'student_code' => 'nullable|string|max:50'
         ]);
         
         $student = new Student();
@@ -159,6 +165,7 @@ class StudentController extends Controller
         $student->class      = $request->class;
         $student->dob        = $request->dob;
         $student->school_id  = $request->school_id;
+        $student->student_code  = $request->student_code;
         $student->status     = 0;
         $student->created_by = Auth::id();
 
@@ -217,8 +224,7 @@ class StudentController extends Controller
 
             $student->{$request->field} = $request->value;
         }
-
-        dd($student->dob, $request->value);
+        
         $student->updated_by = auth()->id();
         $student->save();
 
@@ -334,6 +340,7 @@ class StudentController extends Controller
                     }
                 })
                 ->addIndexColumn()
+                ->editColumn('student_code', fn($row) => $row->student_code)
                 ->editColumn('name', fn($row) =>
                     '<span class="editable" contenteditable="true" data-id="'.$row->id.'" data-field="name">'.e($row->name).'</span>')
                 ->editColumn('class', fn($row) =>
@@ -364,8 +371,8 @@ class StudentController extends Controller
                     }
 
                     $downloadBtn = (!empty($row->photo) && file_exists(public_path('uploads/images/students/' . $row->photo)))
-                        ? '<a href="/uploads/images/students/'.$row->photo.'" download class="btn btn-sm btn-success"><i class="bi bi-download"></i></a>'
-                        : '';
+                    ? '<a href="'.route('students.downloadPhoto', $row->id).'" class="btn btn-sm btn-success"><i class="bi bi-download"></i></a>'
+                    : '';
 
                     $uploadBtn = '<button data-id="' . $row->id . '" class="btn btn-sm btn-info upload-photo"><i class="bi bi-upload"></i></button>';
 
@@ -385,4 +392,55 @@ class StudentController extends Controller
         }
     }
     
+    public function downloadPhoto($id)
+    {
+        $student = Student::findOrFail($id);
+
+        if (!$student->photo || !file_exists(public_path('uploads/images/students/' . $student->photo))) {
+            abort(404, 'Photo not found');
+        }
+
+        $originalPath = public_path('uploads/images/students/' . $student->photo);
+        $extension = pathinfo($originalPath, PATHINFO_EXTENSION);
+
+        $filename = $student->student_code ? $student->student_code . '.' . $extension : 'student_' . $student->id . '.' . $extension;
+        $tempPath = storage_path('app/temp_downloads/' . $filename);
+        
+        File::ensureDirectoryExists(storage_path('app/temp_downloads'));
+        
+        File::copy($originalPath, $tempPath);
+
+        return response()->download($tempPath, $filename)->deleteFileAfterSend(true);
+    }
+
+    public function downloadPhotos(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array'
+        ]);
+
+        $students = Student::whereIn('id', $request->ids)->get();
+
+        $zipFileName = 'student_photos.zip';
+        $zipPath = storage_path("app/temp/{$zipFileName}");
+        
+        File::ensureDirectoryExists(storage_path("app/temp"));
+
+        $zip = new ZipArchive;
+        if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) === TRUE) {
+            foreach ($students as $student) {
+                if (!$student->photo) continue;
+
+                $photoPath = public_path('uploads/images/students/' . $student->photo);
+                if (file_exists($photoPath)) {
+                    $extension = pathinfo($student->photo, PATHINFO_EXTENSION);
+                    $fileName = ($student->student_code ?: 'student_'.$student->id) . '.' . $extension;
+                    $zip->addFile($photoPath, $fileName);
+                }
+            }
+            $zip->close();
+        }
+
+        return response()->download($zipPath)->deleteFileAfterSend(true);
+    }
 }

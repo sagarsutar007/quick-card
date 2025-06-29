@@ -29,7 +29,7 @@
         </div>
     </div>
 
-    <div class="card overflow-hidden">
+    <div class="card">
         <div class="card-body">
             <div class="d-flex align-items-center justify-content-between">
                 <h5 class="mb-3">Students</h5>
@@ -40,6 +40,9 @@
                     <button class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#excelModal">
                         <i class="ti ti-file-spreadsheet fs-5 me-2"></i> Import Excel
                     </button>
+                    <button id="downloadSelectedBtn" class="btn btn-secondary mb-3">
+                        <i class="ti ti-download me-1"></i> Download Selected
+                    </button>
                 </div>
                 
             </div>
@@ -47,7 +50,9 @@
             <table id="studentsTable" class="table table-bordered" style="width:100%">
                 <thead>
                     <tr>
+                        <th><input type="checkbox" id="selectAll"></th>
                         <th>Sl.</th>
+                        <th>Code</th>
                         <th>Name</th>
                         <th>Class</th>
                         <th>DOB</th>
@@ -206,7 +211,17 @@
                 }
             ],
             columns: [
-                { data: 'id', name: 'id'},
+                {
+                    data: 'id',
+                    name: 'id',
+                    orderable: false,
+                    searchable: false,
+                    render: function (data, type, row) {
+                        return `<input type="checkbox" class="student-checkbox" value="${data}">`;
+                    }
+                },
+                { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
+                { data: 'student_code', name: 'student_code'},
                 { data: 'name', name: 'name' },
                 { data: 'class', name: 'class' },
                 { data: 'dob', name: 'dob' },
@@ -268,31 +283,63 @@
             });
         });
 
-        $(document).on('click', '.view-photo', function () {
-            const photoUrl = $(this).data('photo');
-            
-            const lgContainer = document.getElementById('lg-temp');
-            
-            lgContainer.innerHTML = '';
-            
-            lgContainer.innerHTML = `<a href="${photoUrl}"><img src="${photoUrl}" style="display:none;" /></a>`;
-            
-            if (lgContainer.lgDestroy) {
-                lgContainer.lgDestroy(true);
+        $(document).on('click', '#downloadSelectedBtn', function () {
+            let selectedIds = [];
+
+            $('.student-checkbox:checked').each(function () {
+                selectedIds.push($(this).val());
+            });
+
+            if (selectedIds.length === 0) {
+                toastr.warning('Please select at least one student.');
+                return;
             }
             
-            lightGallery(lgContainer, {
-                dynamic: true,
-                dynamicEl: [{
-                    src: photoUrl,
-                    thumb: photoUrl
-                }],
-                plugins: [lgZoom],
-                zoom: true,
-                download: true
+            if (!confirm(`Download photos for ${selectedIds.length} student(s)?`)) return;
+            
+            $.ajax({
+                url: '/students/download-photos',
+                method: 'POST',
+                data: {
+                    _token: $('meta[name="csrf-token"]').attr('content'),
+                    ids: selectedIds
+                },
+                xhrFields: {
+                    responseType: 'blob'
+                },
+                success: function (blob) {
+                    const link = document.createElement('a');
+                    const url = window.URL.createObjectURL(blob);
+                    link.href = url;
+                    link.download = 'student_photos.zip';
+                    document.body.appendChild(link);
+                    link.click();
+                    link.remove();
+                    window.URL.revokeObjectURL(url);
+                },
+                error: function () {
+                    toastr.error('Download failed.');
+                }
             });
         });
 
+        $(document).on('change', '#selectAll', function () {
+            const isChecked = $(this).is(':checked');
+            $('.student-checkbox').prop('checked', isChecked);
+        });
+
+        $(document).on('change', '.student-checkbox', function () {
+            const all = $('.student-checkbox').length;
+            const checked = $('.student-checkbox:checked').length;
+
+            $('#selectAll').prop('checked', all === checked);
+        });
+
+        function getSelectedStudentIds() {
+            return $('.student-checkbox:checked').map(function () {
+                return $(this).val();
+            }).get();
+        }
 
     });
 </script>

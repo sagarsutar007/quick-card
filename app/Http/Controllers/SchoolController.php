@@ -160,10 +160,11 @@ class SchoolController extends Controller
             'id_card' => 'nullable|string',
             'amount' => 'nullable|string',
             'payment_details' => 'nullable|string',
+            'description' => 'nullable|string',
         ]);
 
         $school = School::findOrFail($id);
-        $school->update($request->only('id_card', 'amount', 'payment_details'));
+        $school->update($request->only('id_card', 'amount', 'payment_details', 'description'));
         ActivityLogger::log('Update School', 'Updated ' . str_ireplace(' school', '', $school->school_name) . ' school\'s text fields!');
         return redirect()->back()->with('success', 'School info updated successfully.');
     }

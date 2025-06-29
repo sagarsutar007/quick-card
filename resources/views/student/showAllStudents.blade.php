@@ -32,6 +32,7 @@
                     <a class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#addNewModal">
                         <i class="ti ti-plus fs-5 me-2"></i> Add New
                     </a>
+                    
                 </div>
                 
             </div>
@@ -40,6 +41,7 @@
                 <thead>
                     <tr>
                         <th>Sl.</th>
+                        <th>Code</th>
                         <th>Name</th>
                         <th>Class</th>
                         <th>DOB</th>
@@ -194,7 +196,8 @@
                 }
             ],
             columns: [
-                { data: 'id', name: 'id'},
+                { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
+                { data: 'student_code', name: 'student_code' },
                 { data: 'name', name: 'name' },
                 { data: 'class', name: 'class' },
                 { data: 'dob', name: 'dob' },

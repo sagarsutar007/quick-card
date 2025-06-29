@@ -13,8 +13,6 @@ use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\UserController;
 
-
-
 use App\Http\Middleware\AuthenticateManagement;
 use App\Http\Middleware\RedirectIfAuthenticatedManagement;
 
@@ -82,6 +80,9 @@ Route::middleware(AuthenticateManagement::class)->group(function () {
     Route::get('/students/{id}/photos', [StudentController::class, 'getPhotos']);
     Route::post('/students/import-excel', [StudentController::class, 'importExcel'])->name('students.importExcel');
     Route::get('/all-students', [StudentController::class, 'getAllStudents'])->name('students.getAll');
+    Route::get('/students/download-photo/{id}', [StudentController::class, 'downloadPhoto'])->name('students.downloadPhoto');
+    Route::post('/students/download-photos', [StudentController::class, 'downloadPhotos'])->name('students.downloadPhotos');
+
 
 
 });

@@ -21,14 +21,16 @@
     <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
     <!-- Select2 -->
     <link rel="stylesheet" href="{{ asset('libs/select2/dist/css/select2.min.css') }}">
+    <!-- LightGallery CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@2.7.1/css/lightgallery-bundle.min.css" />
     <!-- Dropzone -->
-    <link rel="stylesheet" href="{{ asset('libs/dropzone/dist/min/dropzone.min.css') }}">.
-    
+    <link rel="stylesheet" href="{{ asset('libs/dropzone/dist/min/dropzone.min.css') }}">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
     <!-- Core Css -->
     <link rel="stylesheet" href="{{ asset('css/style-orange.min.css') }}" id="themeColors"/>
 
     <link rel="stylesheet" href="{{ asset('css/custom.css') }}">
+    @yield('css')
   </head>
   <body>
     <!-- Preloader -->
@@ -251,6 +253,8 @@
     <script src="{{ asset('libs/select2/dist/js/select2.min.js') }}"></script>
 
     <script src="{{ asset('libs/sweetalert2/dist/sweetalert2.min.js') }}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lightgallery@2.7.1/lightgallery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lightgallery@2.7.1/plugins/zoom/lg-zoom.min.js"></script>
 
     <script src="{{ asset('js/plugins/toastr-init.js') }}"></script>
     <script src="{{ asset('js/custom.js') }}"></script>
