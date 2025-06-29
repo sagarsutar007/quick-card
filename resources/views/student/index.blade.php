@@ -33,18 +33,28 @@
         <div class="card-body">
             <div class="d-flex align-items-center justify-content-between">
                 <h5 class="mb-3">Students</h5>
-                <div class="btn-group">
+                <div class="btn-group flex-wrap">
                     <a class="btn btn-primary mb-3" href="{{ route('student.add', ['school_id' => $school->id]) }}">
-                        <i class="ti ti-plus fs-5 me-2"></i> Add New
+                        <i class="ti ti-plus fs-5 me-2"></i>
+                        <span class="d-none d-sm-inline">Add New</span>
                     </a>
                     <button class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#excelModal">
-                        <i class="ti ti-file-spreadsheet fs-5 me-2"></i> Import Excel
+                        <i class="ti ti-file-spreadsheet fs-5 me-2"></i>
+                        <span class="d-none d-sm-inline">Import Excel</span>
                     </button>
                     <button id="downloadSelectedBtn" class="btn btn-secondary mb-3">
-                        <i class="ti ti-download me-1"></i> Download Selected
+                        <i class="ti ti-download me-1"></i>
+                        <span class="d-none d-sm-inline">Download Selected</span>
+                    </button>
+                    <button id="lockSelectedBtn" class="btn btn-dark mb-3">
+                        <i class="ti ti-lock me-1"></i>
+                        <span class="d-none d-sm-inline">Lock Selected</span>
+                    </button>
+                    <button id="unlockSelectedBtn" class="btn btn-info mb-3">
+                        <i class="ti ti-lock-off me-1"></i>
+                        <span class="d-none d-sm-inline">Unlock Selected</span>
                     </button>
                 </div>
-                
             </div>
             <div id="lg-temp" style="display: none;"></div>
             <table id="studentsTable" class="table table-bordered" style="width:100%">
@@ -63,7 +73,24 @@
                         <th>Updated On</th>
                         <th class="text-nowrap">Actions</th>
                     </tr>
+                    
                 </thead>
+                <tfoot>
+                    <tr>
+                        <th></th>
+                        <th></th>
+                        <th>Student Code</th>
+                        <th>Name</th>
+                        <th>Class</th>
+                        <th>DOB</th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                    </tr>
+                </tfoot>
             </table>
         </div>
     </div>    
@@ -165,7 +192,7 @@
             });
         });
 
-        $('#studentsTable').DataTable({
+        const table = $('#studentsTable').DataTable({
             processing: true,
             serverSide: true,
             ajax: '/schools/{{ $id }}/students',
@@ -262,7 +289,19 @@
                 });
 
                 Fancybox.bind('[data-fancybox]');
-            }
+            },
+            initComplete: function () {
+                this.api()
+                    .columns()
+                    .every(function () {
+                        const that = this;
+                        $("input", this.footer()).on("keyup change clear", function () {
+                            if (that.search() !== this.value) {
+                                that.search(this.value).draw();
+                            }
+                        });
+                    });
+            },
         });
         
         $(document).on('submit', '.delete-form', function (e) {
@@ -340,6 +379,100 @@
                 return $(this).val();
             }).get();
         }
+
+        $(document).on('click', '.remove-photo', function () {
+            const id = $(this).data('id');
+
+            if (!confirm('Are you sure you want to remove this photo?')) return;
+
+            $.ajax({
+                url: '/students/' + id + '/remove-photo',
+                method: 'DELETE',
+                data: {
+                    _token: $('meta[name="csrf-token"]').attr('content')
+                },
+                success: function (res) {
+                    toastr.success(res.message);
+                    $('#studentsTable').DataTable().ajax.reload(null, false);
+                },
+                error: function (xhr) {
+                    const err = xhr.responseJSON?.error || 'Something went wrong';
+                    toastr.error(err);
+                }
+            });
+        });
+
+        $("#studentsTable tfoot th").each(function () {
+            const title = $(this).text().trim();
+            if (title !== "") {
+                $(this).html(
+                    `<input type="text" class="form-control" placeholder="Search ${title}" />`
+                );
+            }
+        });
+
+        $(document).on('click', '.toggle-lock', function () {
+            const studentId = $(this).data('id');
+
+            $.ajax({
+                url: '/students/' + studentId + '/toggle-lock',
+                type: 'POST',
+                data: {
+                    _token: $('meta[name="csrf-token"]').attr('content'),
+                },
+                success: function (response) {
+                    toastr.success(response.message);
+                    $('#studentsTable').DataTable().ajax.reload(null, false);
+                },
+                error: function () {
+                    toastr.error('Failed to toggle lock.');
+                }
+            });
+        });
+
+        $('#lockSelectedBtn').on('click', function () {
+            const ids = getSelectedStudentIds();
+            if (ids.length === 0) return toastr.warning("No students selected.");
+
+            $.ajax({
+                url: '/students/lock-multiple',
+                method: 'POST',
+                data: {
+                    _token: $('meta[name="csrf-token"]').attr('content'),
+                    ids: ids,
+                    lock: 1
+                },
+                success: function (res) {
+                    toastr.success(res.message || "Students locked.");
+                    $('#studentsTable').DataTable().ajax.reload(null, false);
+                },
+                error: function () {
+                    toastr.error("Failed to lock students.");
+                }
+            });
+        });
+
+        $('#unlockSelectedBtn').on('click', function () {
+            const ids = getSelectedStudentIds();
+            if (ids.length === 0) return toastr.warning("No students selected.");
+
+            $.ajax({
+                url: '/students/lock-multiple',
+                method: 'POST',
+                data: {
+                    _token: $('meta[name="csrf-token"]').attr('content'),
+                    ids: ids,
+                    lock: 0
+                },
+                success: function (res) {
+                    toastr.success(res.message || "Students unlocked.");
+                    $('#studentsTable').DataTable().ajax.reload(null, false);
+                },
+                error: function () {
+                    toastr.error("Failed to unlock students.");
+                }
+            });
+        });
 
     });
 </script>

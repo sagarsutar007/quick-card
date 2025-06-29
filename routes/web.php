@@ -82,6 +82,11 @@ Route::middleware(AuthenticateManagement::class)->group(function () {
     Route::get('/all-students', [StudentController::class, 'getAllStudents'])->name('students.getAll');
     Route::get('/students/download-photo/{id}', [StudentController::class, 'downloadPhoto'])->name('students.downloadPhoto');
     Route::post('/students/download-photos', [StudentController::class, 'downloadPhotos'])->name('students.downloadPhotos');
+    Route::delete('/students/{id}/remove-photo', [StudentController::class, 'removePhoto'])->name('students.removePhoto');
+    Route::post('/students/{id}/toggle-lock', [StudentController::class, 'toggleLock'])->name('students.toggleLock');
+    Route::post('/students/lock-multiple', [StudentController::class, 'lockMultiple'])->name('students.lockMultiple');
+
+
 
 
 

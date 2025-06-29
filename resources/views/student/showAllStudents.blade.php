@@ -32,14 +32,25 @@
                     <a class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#addNewModal">
                         <i class="ti ti-plus fs-5 me-2"></i> Add New
                     </a>
-                    
+                    <button id="downloadSelectedBtn" class="btn btn-secondary mb-3">
+                        <i class="ti ti-download me-1"></i>
+                        <span class="d-none d-sm-inline">Download Selected</span>
+                    </button>
+                    <button id="lockSelectedBtn" class="btn btn-dark mb-3">
+                        <i class="ti ti-lock me-1"></i>
+                        <span class="d-none d-sm-inline">Lock Selected</span>
+                    </button>
+                    <button id="unlockSelectedBtn" class="btn btn-info mb-3">
+                        <i class="ti ti-lock-off me-1"></i>
+                        <span class="d-none d-sm-inline">Unlock Selected</span>
+                    </button>
                 </div>
-                
             </div>
             <div id="lg-temp" style="display: none;"></div>
             <table id="studentsTable" class="table table-bordered" style="width:100%">
                 <thead>
                     <tr>
+                        <th><input type="checkbox" id="selectAll"></th>
                         <th>Sl.</th>
                         <th>Code</th>
                         <th>Name</th>
@@ -57,6 +68,26 @@
                         <th class="text-nowrap">Actions</th>
                     </tr>
                 </thead>
+                <tfoot>
+                    <tr>
+                        <th></th>
+                        <th></th>
+                        <th>Code</th>
+                        <th>Name</th>
+                        <th>Class</th>
+                        <th>DOB</th>
+                        <th></th>
+                        <th>School</th>
+                        <th>Cluster</th>
+                        <th>Block</th>
+                        <th>District</th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                    </tr>
+                </tfoot>
             </table>
         </div>
     </div>    
@@ -102,8 +133,6 @@
             </div>
         </div>
     </div>
-
-
 @endsection
 
 @section('css')
@@ -150,7 +179,7 @@
             });
         });
 
-        $('#studentsTable').DataTable({
+        const table = $('#studentsTable').DataTable({
             processing: true,
             serverSide: true,
             ajax: '/all-students',
@@ -196,16 +225,25 @@
                 }
             ],
             columns: [
+                {
+                    data: 'id',
+                    name: 'id',
+                    orderable: false,
+                    searchable: false,
+                    render: function (data, type, row) {
+                        return `<input type="checkbox" class="student-checkbox" value="${data}">`;
+                    }
+                },
                 { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
                 { data: 'student_code', name: 'student_code' },
                 { data: 'name', name: 'name' },
                 { data: 'class', name: 'class' },
                 { data: 'dob', name: 'dob' },
                 { data: 'photo', name: 'photo' },
-                { data: 'school', name: 'school' },
-                { data: 'cluster', name: 'cluster' },
-                { data: 'block', name: 'block' },
-                { data: 'district', name: 'district' },
+                { data: 'school', name: 'school_name' },
+                { data: 'cluster', name: 'clusters.name' },
+                { data: 'block', name: 'blocks.name' },
+                { data: 'district', name: 'districts.name' },
                 { data: 'status', name: 'status' },
                 { data: 'created_by', name: 'created_by' },
                 { data: 'created_at', name: 'created_at' },
@@ -242,7 +280,19 @@
                 });
 
                 Fancybox.bind('[data-fancybox]');
-            }
+            },
+            initComplete: function () {
+                this.api()
+                    .columns()
+                    .every(function () {
+                        const that = this;
+                        $("input", this.footer()).on("keyup change clear", function () {
+                            if (that.search() !== this.value) {
+                                that.search(this.value).draw();
+                            }
+                        });
+                    });
+            },
         });
         
         $(document).on('submit', '.delete-form', function (e) {
@@ -336,6 +386,158 @@
             if (selected_id) {
                 window.location.href = "/students/add?school_id=" + selected_id;
             }
+        });
+
+        $(document).on('click', '.remove-photo', function () {
+            const id = $(this).data('id');
+
+            if (!confirm('Are you sure you want to remove this photo?')) return;
+
+            $.ajax({
+                url: '/students/' + id + '/remove-photo',
+                method: 'DELETE',
+                data: {
+                    _token: $('meta[name="csrf-token"]').attr('content')
+                },
+                success: function (res) {
+                    toastr.success(res.message);
+                    $('#studentsTable').DataTable().ajax.reload(null, false);
+                },
+                error: function (xhr) {
+                    const err = xhr.responseJSON?.error || 'Something went wrong';
+                    toastr.error(err);
+                }
+            });
+        });
+
+        $("#studentsTable tfoot th").each(function () {
+            const title = $(this).text().trim();
+            if (title !== "") {
+                $(this).html(
+                    `<input type="text" class="form-control" placeholder="Search ${title}" />`
+                );
+            }
+        });
+
+        $(document).on('click', '.toggle-lock', function () {
+            const studentId = $(this).data('id');
+
+            $.ajax({
+                url: '/students/' + studentId + '/toggle-lock',
+                type: 'POST',
+                data: {
+                    _token: $('meta[name="csrf-token"]').attr('content'),
+                },
+                success: function (response) {
+                    toastr.success(response.message);
+                    $('#studentsTable').DataTable().ajax.reload(null, false);
+                },
+                error: function () {
+                    toastr.error('Failed to toggle lock.');
+                }
+            });
+        });
+
+        $('#lockSelectedBtn').on('click', function () {
+            const ids = getSelectedStudentIds();
+            if (ids.length === 0) return toastr.warning("No students selected.");
+
+            $.ajax({
+                url: '/students/lock-multiple',
+                method: 'POST',
+                data: {
+                    _token: $('meta[name="csrf-token"]').attr('content'),
+                    ids: ids,
+                    lock: 1
+                },
+                success: function (res) {
+                    toastr.success(res.message || "Students locked.");
+                    $('#studentsTable').DataTable().ajax.reload(null, false);
+                },
+                error: function () {
+                    toastr.error("Failed to lock students.");
+                }
+            });
+        });
+
+        $('#unlockSelectedBtn').on('click', function () {
+            const ids = getSelectedStudentIds();
+            if (ids.length === 0) return toastr.warning("No students selected.");
+
+            $.ajax({
+                url: '/students/lock-multiple',
+                method: 'POST',
+                data: {
+                    _token: $('meta[name="csrf-token"]').attr('content'),
+                    ids: ids,
+                    lock: 0
+                },
+                success: function (res) {
+                    toastr.success(res.message || "Students unlocked.");
+                    $('#studentsTable').DataTable().ajax.reload(null, false);
+                },
+                error: function () {
+                    toastr.error("Failed to unlock students.");
+                }
+            });
+        });
+
+        $(document).on('change', '#selectAll', function () {
+            const isChecked = $(this).is(':checked');
+            $('.student-checkbox').prop('checked', isChecked);
+        });
+
+        $(document).on('change', '.student-checkbox', function () {
+            const all = $('.student-checkbox').length;
+            const checked = $('.student-checkbox:checked').length;
+
+            $('#selectAll').prop('checked', all === checked);
+        });
+
+        function getSelectedStudentIds() {
+            return $('.student-checkbox:checked').map(function () {
+                return $(this).val();
+            }).get();
+        }
+
+        $(document).on('click', '#downloadSelectedBtn', function () {
+            let selectedIds = [];
+
+            $('.student-checkbox:checked').each(function () {
+                selectedIds.push($(this).val());
+            });
+
+            if (selectedIds.length === 0) {
+                toastr.warning('Please select at least one student.');
+                return;
+            }
+            
+            if (!confirm(`Download photos for ${selectedIds.length} student(s)?`)) return;
+            
+            $.ajax({
+                url: '/students/download-photos',
+                method: 'POST',
+                data: {
+                    _token: $('meta[name="csrf-token"]').attr('content'),
+                    ids: selectedIds
+                },
+                xhrFields: {
+                    responseType: 'blob'
+                },
+                success: function (blob) {
+                    const link = document.createElement('a');
+                    const url = window.URL.createObjectURL(blob);
+                    link.href = url;
+                    link.download = 'student_photos.zip';
+                    document.body.appendChild(link);
+                    link.click();
+                    link.remove();
+                    window.URL.revokeObjectURL(url);
+                },
+                error: function () {
+                    toastr.error('Download failed.');
+                }
+            });
         });
 
     });

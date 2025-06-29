@@ -50,6 +50,33 @@ class StudentController extends Controller
                     $query->where('status', 0);
                 }
             })
+            ->filterColumn('dob', function ($query, $keyword) {
+                $keyword = trim($keyword);
+                
+                if (preg_match('/^\d{2}\/\d{2}\/\d{4}$/', $keyword)) {
+                    try {
+                        $date = \Carbon\Carbon::createFromFormat('d/m/Y', $keyword)->format('Y-m-d');
+                        $query->whereDate('dob', $date);
+                    } catch (\Exception $e) {
+                        
+                    }
+                }
+                elseif (preg_match('/^\d{2}\/\d{2}$/', $keyword)) {
+                    $parts = explode('/', $keyword);
+                    $day = $parts[0];
+                    $month = $parts[1];
+                    $query->whereRaw("DAY(dob) = ? AND MONTH(dob) = ?", [$day, $month]);
+                }
+                elseif (preg_match('/^\d{2}\/\d{4}$/', $keyword)) {
+                    $parts = explode('/', $keyword);
+                    $month = $parts[0];
+                    $year = $parts[1];
+                    $query->whereRaw("MONTH(dob) = ? AND YEAR(dob) = ?", [$month, $year]);
+                }
+                elseif (preg_match('/^\d{4}$/', $keyword)) {
+                    $query->whereYear('dob', $keyword);
+                }
+            })
             ->addIndexColumn()
             ->editColumn('student_code', fn($row) => $row->student_code)
             ->editColumn('name', fn($row) =>
@@ -68,30 +95,47 @@ class StudentController extends Controller
             ->editColumn('created_at', fn($row) => $row->created_at?->format('d M Y h:i A') ?? '')
             ->editColumn('updated_at', fn($row) => $row->updated_at?->format('d M Y h:i A') ?? '')
             ->addColumn('action', function ($row) {
-                $viewBtn = '';
-                if (!empty($row->photo) && file_exists(public_path('uploads/images/students/' . $row->photo))) {
-                    $viewBtn = '<a href="'.asset('uploads/images/students/' . $row->photo).'" class="btn btn-sm btn-primary view-photo" data-fancybox="gallery" data-caption="'.e($row->name).'">
-                                    <i class="bi bi-image"></i>
-                                </a>';
+                $buttons = '';
+                
+                if ($row->lock) {
+                    $buttons .= '<button data-id="' . $row->id . '" class="btn btn-sm btn-secondary toggle-lock" title="Unlock Student">
+                                    <i class="ti ti-lock-off"></i>
+                                </button>';
+                } else {
+
+                    $buttons .= '<button data-id="' . $row->id . '" class="btn btn-sm btn-info upload-photo" title="Upload Photo"><i class="bi bi-upload"></i></button>';
+                    
+                    if (!empty($row->photo) && file_exists(public_path('uploads/images/students/' . $row->photo))) {
+                        $buttons .= '<a href="'.asset('uploads/images/students/' . $row->photo).'" class="btn btn-sm btn-primary view-photo" data-fancybox="gallery" data-caption="'.e($row->name).'" title="View Photo">
+                                        <i class="bi bi-image"></i>
+                                    </a>';
+
+                        $buttons .= '<a href="'.route('students.downloadPhoto', $row->id).'" class="btn btn-sm btn-success" title="Download Photo">
+                                        <i class="bi bi-download"></i>
+                                    </a>';
+
+                        
+
+                        $buttons .= '<button data-id="' . $row->id . '" class="btn btn-sm btn-warning remove-photo" title="Remove Photo">
+                                        <i class="ti ti-photo-x"></i>
+                                    </button>';
+
+                        $buttons .= '<button data-id="' . $row->id . '" class="btn btn-sm btn-dark toggle-lock" title="Lock Student">
+                                        <i class="ti ti-lock"></i>
+                                    </button>';
+                    }
+                                
+                    $buttons .= '<form action="' . route('students.delete', $row->id) . '" method="POST" class="d-inline delete-form">
+                                    ' . csrf_field() . method_field('DELETE') . '
+                                    <button type="submit" class="btn btn-sm btn-danger" title="Delete Student">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>';
                 }
 
-                $downloadBtn = (!empty($row->photo) && file_exists(public_path('uploads/images/students/' . $row->photo)))
-                    ? '<a href="'.route('students.downloadPhoto', $row->id).'" class="btn btn-sm btn-success"><i class="bi bi-download"></i></a>'
-                    : '';
-
-                $uploadBtn = '<button data-id="' . $row->id . '" class="btn btn-sm btn-info upload-photo"><i class="bi bi-upload"></i></button>';
-
-                return '
-                    <div class="d-inline-flex gap-1">
-                        ' . $viewBtn . $downloadBtn . $uploadBtn . '
-                        <form action="' . route('students.delete', $row->id) . '" method="POST" class="d-inline delete-form">
-                            ' . csrf_field() . method_field('DELETE') . '
-                            <button type="submit" class="btn btn-sm btn-danger">
-                                <i class="bi bi-trash"></i>
-                            </button>
-                        </form>
-                    </div>';
+                return '<div class="d-inline-flex gap-1">' . $buttons . '</div>';
             })
+
             
             ->rawColumns(['name', 'class', 'dob', 'status', 'photo', 'action'])
             ->make(true);
@@ -275,18 +319,18 @@ class StudentController extends Controller
         foreach ($rows->skip(1) as $row) {
             $data = $row->toArray();
             
-            if (empty($data[0]) || empty($data[1]) || empty($data[2])) {
+            if (empty($data[0]) || empty($data[1]) || empty($data[2]) || empty($data[3])) {
                 continue;
             }
 
             try {
-                $dob = \Carbon\Carbon::parse($data[2])->format('Y-m-d');
+                $dob = \Carbon\Carbon::parse($data[3])->format('Y-m-d');
             } catch (\Exception $e) {
                 continue; 
             }
             
             $exists = Student::where('name', $data[0])
-                ->where('class', $data[1])
+                ->where('class', $data[2])
                 ->whereDate('dob', $dob)
                 ->where('school_id', $request->school_id)
                 ->exists();
@@ -296,8 +340,9 @@ class StudentController extends Controller
             }
 
             Student::create([
-                'name'       => $data[0],
-                'class'      => $data[1],
+                'student_code' => $data[0],      
+                'name'       => $data[1],
+                'class'      => $data[2],
                 'dob'        => $dob,
                 'school_id'  => $request->school_id,
                 'status'     => 0,
@@ -339,6 +384,33 @@ class StudentController extends Controller
                         $query->where('status', 0);
                     }
                 })
+                ->filterColumn('dob', function ($query, $keyword) {
+                    $keyword = trim($keyword);
+                    
+                    if (preg_match('/^\d{2}\/\d{2}\/\d{4}$/', $keyword)) {
+                        try {
+                            $date = \Carbon\Carbon::createFromFormat('d/m/Y', $keyword)->format('Y-m-d');
+                            $query->whereDate('dob', $date);
+                        } catch (\Exception $e) {
+                            
+                        }
+                    }
+                    elseif (preg_match('/^\d{2}\/\d{2}$/', $keyword)) {
+                        $parts = explode('/', $keyword);
+                        $day = $parts[0];
+                        $month = $parts[1];
+                        $query->whereRaw("DAY(dob) = ? AND MONTH(dob) = ?", [$day, $month]);
+                    }
+                    elseif (preg_match('/^\d{2}\/\d{4}$/', $keyword)) {
+                        $parts = explode('/', $keyword);
+                        $month = $parts[0];
+                        $year = $parts[1];
+                        $query->whereRaw("MONTH(dob) = ? AND YEAR(dob) = ?", [$month, $year]);
+                    }
+                    elseif (preg_match('/^\d{4}$/', $keyword)) {
+                        $query->whereYear('dob', $keyword);
+                    }
+                })
                 ->addIndexColumn()
                 ->editColumn('student_code', fn($row) => $row->student_code)
                 ->editColumn('name', fn($row) =>
@@ -363,29 +435,45 @@ class StudentController extends Controller
                 ->editColumn('created_at', fn($row) => $row->created_at?->format('d M Y h:i A') ?? '')
                 ->editColumn('updated_at', fn($row) => $row->updated_at?->format('d M Y h:i A') ?? '')
                 ->addColumn('action', function ($row) {
-                    $viewBtn = '';
-                    if (!empty($row->photo) && file_exists(public_path('uploads/images/students/' . $row->photo))) {
-                        $viewBtn = '<a href="'.asset('uploads/images/students/' . $row->photo).'" class="btn btn-sm btn-primary view-photo" data-fancybox="gallery" data-caption="'.e($row->name).'">
-                                        <i class="bi bi-image"></i>
-                                    </a>';
+                    $buttons = '';
+                    
+                    if ($row->lock) {
+                        $buttons .= '<button data-id="' . $row->id . '" class="btn btn-sm btn-secondary toggle-lock" title="Unlock Student">
+                                        <i class="ti ti-lock-off"></i>
+                                    </button>';
+                    } else {
+
+                        $buttons .= '<button data-id="' . $row->id . '" class="btn btn-sm btn-info upload-photo" title="Upload Photo"><i class="bi bi-upload"></i></button>';
+                        
+                        if (!empty($row->photo) && file_exists(public_path('uploads/images/students/' . $row->photo))) {
+                            $buttons .= '<a href="'.asset('uploads/images/students/' . $row->photo).'" class="btn btn-sm btn-primary view-photo" data-fancybox="gallery" data-caption="'.e($row->name).'" title="View Photo">
+                                            <i class="bi bi-image"></i>
+                                        </a>';
+
+                            $buttons .= '<a href="'.route('students.downloadPhoto', $row->id).'" class="btn btn-sm btn-success" title="Download Photo">
+                                            <i class="bi bi-download"></i>
+                                        </a>';
+
+                            
+
+                            $buttons .= '<button data-id="' . $row->id . '" class="btn btn-sm btn-warning remove-photo" title="Remove Photo">
+                                            <i class="ti ti-photo-x"></i>
+                                        </button>';
+
+                            $buttons .= '<button data-id="' . $row->id . '" class="btn btn-sm btn-dark toggle-lock" title="Lock Student">
+                                            <i class="ti ti-lock"></i>
+                                        </button>';
+                        }
+                                
+                        $buttons .= '<form action="' . route('students.delete', $row->id) . '" method="POST" class="d-inline delete-form">
+                                    ' . csrf_field() . method_field('DELETE') . '
+                                    <button type="submit" class="btn btn-sm btn-danger" title="Delete Student">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>';
                     }
 
-                    $downloadBtn = (!empty($row->photo) && file_exists(public_path('uploads/images/students/' . $row->photo)))
-                    ? '<a href="'.route('students.downloadPhoto', $row->id).'" class="btn btn-sm btn-success"><i class="bi bi-download"></i></a>'
-                    : '';
-
-                    $uploadBtn = '<button data-id="' . $row->id . '" class="btn btn-sm btn-info upload-photo"><i class="bi bi-upload"></i></button>';
-
-                    return '
-                        <div class="d-inline-flex gap-1">
-                            ' . $viewBtn . $downloadBtn . $uploadBtn . '
-                            <form action="' . route('students.delete', $row->id) . '" method="POST" class="d-inline delete-form">
-                                ' . csrf_field() . method_field('DELETE') . '
-                                <button type="submit" class="btn btn-sm btn-danger">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </form>
-                        </div>';
+                    return '<div class="d-inline-flex gap-1">' . $buttons . '</div>';
                 })
                 ->rawColumns(['name', 'class', 'dob', 'photo', 'school', 'status', 'action'])
                 ->make(true);
@@ -430,6 +518,7 @@ class StudentController extends Controller
         if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) === TRUE) {
             foreach ($students as $student) {
                 if (!$student->photo) continue;
+                if ($student->lock === 1) continue;
 
                 $photoPath = public_path('uploads/images/students/' . $student->photo);
                 if (file_exists($photoPath)) {
@@ -443,4 +532,59 @@ class StudentController extends Controller
 
         return response()->download($zipPath)->deleteFileAfterSend(true);
     }
+
+    public function removePhoto($id)
+    {
+        $student = Student::findOrFail($id);
+
+        if (!$student->photo) {
+            return response()->json(['error' => 'No photo to delete'], 404);
+        }
+
+        $path = public_path('uploads/images/students/' . $student->photo);
+
+        if (File::exists($path)) {
+            File::delete($path);
+        }
+
+        $student->photo = null;
+        $student->status = 0;
+        $student->updated_by = auth()->id();
+        $student->save();
+
+        return response()->json(['message' => 'Photo removed successfully']);
+    }
+
+    public function toggleLock($id)
+    {
+        $student = Student::findOrFail($id);
+        $student->lock = !$student->lock;
+        $student->save();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => $student->lock ? 'Student locked' : 'Student unlocked'
+        ]);
+    }
+
+    public function lockMultiple(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array',
+            'lock' => 'required|boolean',
+        ]);
+
+        $affected = Student::whereIn('id', $request->ids)
+            ->whereNotNull('photo')
+            ->where('photo', '!=', '')
+            ->update(['lock' => $request->lock]);
+
+        return response()->json([
+            'message' => $request->lock
+                ? "Locked $affected students with photos."
+                : "Unlocked $affected students.",
+        ]);
+    }
+
+
 }

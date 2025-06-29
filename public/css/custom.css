@@ -41,3 +41,7 @@
 .btn-link {
     text-decoration: none;
 }
+
+#studentsTable.table > tfoot > tr > th {
+  padding: 5px 5px;
+}

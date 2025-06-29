@@ -8,11 +8,13 @@ class Student extends Model
 {
     protected $fillable = [
         'school_id',
+        'student_code',
         'name',
         'class',
         'dob',
         'photo',
         'status',
+        'lock',
         'created_by',
         'updated_by',
     ];
