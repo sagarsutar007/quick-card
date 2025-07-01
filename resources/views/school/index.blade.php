@@ -24,7 +24,7 @@
         </div>
     </div>
 
-    <div class="card overflow-hidden">
+    <div class="card">
         <div class="card-body">
             <div class="d-flex align-items-center justify-content-between">
                 <h5 class="mb-3">Schools</h5>
@@ -222,6 +222,7 @@
             const id_card = button.data('id_card');
             const amount = button.data('amount');
             const payment = button.data('payment');
+            const description = button.data('description');
 
             const modal = $(this);
 
@@ -229,6 +230,7 @@
             modal.find('#edit_id_card').val(id_card || '');
             modal.find('#edit_amount').val(amount || '');
             modal.find('#edit_payment_details').val(payment || '');
+            modal.find('#edit_description').val(description || '');
 
             $('#editSchoolForm').attr('action', `/schools/${id}`);
         });

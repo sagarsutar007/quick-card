@@ -12,7 +12,7 @@ class LogController extends Controller
     public function loggedUserData(Request $request)
     {
         if ($request->ajax()) {
-            $userId = Auth::id();
+            $userId = $request->query('user_id') ?? Auth::id();
             
             $data = UserActivity::with('user')
                 ->where('user_id', $userId);

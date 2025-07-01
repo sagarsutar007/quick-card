@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Spatie\Permission\Models\Role;
+use Yajra\DataTables\Facades\DataTables;
 
 use App\Helpers\ActivityLogger;
 use App\Models\Block;
@@ -15,6 +17,7 @@ use App\Models\District;
 use App\Models\School;
 use App\Models\User;
 use App\Models\Student;
+
 
 
 class SchoolController extends Controller
@@ -62,6 +65,7 @@ class SchoolController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'address' => 'required|string|max:255',
             'phone' => 'required|unique:users',
             'email' => 'required|email|unique:users',
             'password' => 'required|min:6',
@@ -73,7 +77,9 @@ class SchoolController extends Controller
 
         $validated['school_id'] = $schoolId;
         $validated['password'] = Hash::make($validated['password']);
-
+        
+        $user = new User($validated);
+        
         if ($request->hasFile('profile_image')) {
             $file = $request->file('profile_image');
             $filename = uniqid('profile_', true) . '.' . $file->getClientOriginalExtension();
@@ -82,8 +88,12 @@ class SchoolController extends Controller
             $user->profile_image = $filename;
         }
 
-        User::create($validated);
+        $user->save();
+        
+        $user->assignRole('authority');
+        
         ActivityLogger::log('Set Authority', 'Added ' . str_ireplace(' user', '', $validated['name']) . ' user as authority!');
+
         return redirect()->route('management.schools')->with('success', 'Authority set successfully!');
     }
 
@@ -140,6 +150,7 @@ class SchoolController extends Controller
                                 data-id="'.$row->id.'" 
                                 data-id_card="'.e($row->id_card).'" 
                                 data-amount="'.e($row->amount).'" 
+                                data-description="'.e($row->description).'" 
                                 data-payment="'.e($row->payment_details).'">
                                 <i class="bi bi-pencil"></i>
                             </a>
@@ -169,4 +180,23 @@ class SchoolController extends Controller
         return redirect()->back()->with('success', 'School info updated successfully.');
     }
 
+    public function deleteSchool($id)
+    {
+        $school = School::findOrFail($id);
+        $school_name = $school->school_name;
+        
+        foreach ($school->students as $student) {
+            if ($student->photo && file_exists(public_path('uploads/images/students/' . $student->photo))) {
+                unlink(public_path('uploads/images/students/' . $student->photo));
+            }
+        }
+        
+        $school->students()->delete();
+        
+        $school->delete();
+
+        ActivityLogger::log('Delete School', 'Deleted ' . str_ireplace(' school', '', $school_name ) . ' school and students');
+
+        return redirect()->back()->with('success', 'School and associated students removed.');
+    }
 }
