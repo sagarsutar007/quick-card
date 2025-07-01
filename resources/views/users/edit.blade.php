@@ -39,6 +39,12 @@
                     <span class="d-none d-md-block">Permissions</span> 
                 </button>
             </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link position-relative rounded-0 d-flex align-items-center justify-content-center bg-transparent fs-3 py-4" id="pills-schools-tab" data-bs-toggle="pill" data-bs-target="#pills-schools" type="button" role="tab" aria-controls="pills-schools" aria-selected="false">
+                    <i class="ti ti-building-bank me-2 fs-6"></i>
+                    <span class="d-none d-md-block">Schools</span> 
+                </button>
+            </li>
         </ul>
         <div class="card-body">
             <div class="tab-content" id="pills-tabContent">
@@ -297,19 +303,60 @@
                                                                     value="{{ $permission->name }}"
                                                                     {{ $user->hasPermissionTo($permission->name) ? 'checked' : '' }}>
                                                                 <label class="form-check-label" for="permission-{{ $permission->id }}">
-                                                                    {{ $permission->name }}
+                                                                    {{ ucwords($permission->name) }}
                                                                 </label>
                                                             </div>
                                                         </div>
                                                     @endforeach
                                                 </div>
-                                                
-                                                <button type="submit" class="btn btn-primary">Update Permissions</button>
+                                                <div class="text-end">
+                                                    <button type="submit" class="btn btn-primary">Update Permissions</button>
+                                                </div>
                                             </form>
                                         </div>
                                     </div>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="pills-schools" role="tabpanel" aria-labelledby="pills-schools-tab" tabindex="0">
+                    <div class="card">
+                        <div class="card-body p-4">
+                            <table id="schoolTable" class="table table-bordered" style="width:100%">
+                                <thead>
+                                    <tr>
+                                        <th>Sl.</th>
+                                        <th>Code</th>
+                                        <th>School Name</th>
+                                        <th>Cluster</th>
+                                        <th>Block</th>
+                                        <th>District</th>
+                                        <th>Status</th>
+                                        <th class="text-nowrap">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($assignedSchools as $index => $school)
+                                        <tr>
+                                            <td>{{ $index + 1 }}</td>
+                                            <td>{{ $school->school_code }}</td>
+                                            <td>{{ $school->school_name }}</td>
+                                            <td>{{ $school->cluster->name ?? '-' }}</td>
+                                            <td>{{ $school->block->name ?? '-' }}</td>
+                                            <td>{{ $school->district->name ?? '-' }}</td>
+                                            <td>{{ $school->status?'Active':'Not Active' }}</td>
+                                            <td>
+                                                <form action="{{ route('users.removeSchool', ['user' => $user->id, 'school' => $school->id]) }}" method="POST" onsubmit="return confirm('Are you sure you want to remove this school?');">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button class="btn btn-sm btn-danger">Remove</button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
@@ -369,6 +416,8 @@
                 }
             });
         });
+
+        $("#schoolTable").DataTable();
     });
 </script>
 @endsection

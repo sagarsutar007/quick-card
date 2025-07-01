@@ -68,6 +68,10 @@ Route::middleware(AuthenticateManagement::class)->group(function () {
     Route::put('/schools/{id}', [SchoolController::class, 'update'])->name('schools.update');
     Route::delete('schools/{id}/delete', [SchoolController::class, 'deleteSchool'])->name('schools.delete');
     Route::get('schools/{id}/view', [StudentController::class, 'index'])->name('school.students');
+    Route::get('/school/{id}/assign-users', [SchoolController::class, 'assignedUsers'])->name('school.assignedUsers');
+    Route::post('/school/{school}/assign/{user}', [SchoolController::class, 'assignUser'])->name('school.assign');
+    Route::delete('/school/{school}/unassign/{user}', [SchoolController::class, 'unassignUser'])->name('school.unassign');
+
     Route::get('schools/{id}/students', [StudentController::class, 'getStudents'])->name('school.students.get');
     Route::delete('students/{id}/delete', [StudentController::class, 'deleteStudent'])->name('students.delete');
     Route::get('students/add', [StudentController::class, 'addStudent'])->name('student.add');
@@ -95,6 +99,8 @@ Route::middleware(AuthenticateManagement::class)->group(function () {
     Route::put('/users/{user}/update-password', [UserController::class, 'updatePassword'])->name('users.update-password');
     Route::put('/users/{user}/update-role', [UserController::class, 'updateRole'])->name('users.update-role');
     Route::put('/users/{user}/update-permissions', [UserController::class, 'updatePermissions'])->name('users.update-permissions');
+    Route::delete('/users/{user}/remove-school/{school}', [UserController::class, 'removeSchool'])->name('users.removeSchool');
+
 
 });
 

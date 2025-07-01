@@ -98,11 +98,34 @@ class UserController extends Controller
     public function edit($id)
     {
         $user = User::findOrFail($id);
-        $roles = Role::all();
+        $loggedInUser = auth()->user();
+        
+        $userRole = $loggedInUser->getRoleNames()->first();
+
+        $roleAccess = [
+            'superadmin' => ['admin', 'authority', 'staff'],
+            'admin' => ['authority', 'staff'],
+            'staff' => ['authority'],
+        ];
+
+        $allowedRoles = $roleAccess[$userRole] ?? [];
+        $roles = Role::whereIn('name', $allowedRoles)->get();
+
         $permissions = Permission::all();
         
-        return view('users.edit', compact('user', 'roles', 'permissions'));
+        $assignedSchools = [];
+
+        if ($user->hasRole('authority')) {
+            if ($user->school) {
+                $assignedSchools[] = $user->school;
+            }
+        } elseif ($user->hasRole('staff')) {
+            $assignedSchools = $user->schools;
+        }
+
+        return view('users.edit', compact('user', 'roles', 'permissions', 'assignedSchools'));
     }
+
 
     public function uploadProfileImage(Request $request, $id)
     {
@@ -220,4 +243,21 @@ class UserController extends Controller
         
         return redirect()->back()->with('success', 'Permissions updated successfully');
     }
+
+    public function removeSchool($userId, $schoolId)
+    {
+        $user = User::findOrFail($userId);
+
+        if ($user->hasRole('authority')) {
+            if ($user->school_id == $schoolId) {
+                $user->school_id = null;
+                $user->save();
+            }
+        } elseif ($user->hasRole('staff')) {
+            $user->schools()->detach($schoolId);
+        }
+
+        return back()->with('success', 'School removed successfully.');
+    }
+
 }

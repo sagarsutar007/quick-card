@@ -145,18 +145,21 @@ class SchoolController extends Controller
                 ->addColumn('action', function ($row) {
                     return '
                         <div class="d-inline-flex gap-1">
-                            <a href="'.route('school.students', $row->id).'" class="btn btn-sm btn-success"><i class="bi bi-eye"></i></a>
+                            <a href="'.route('school.students', $row->id).'" class="btn btn-sm btn-success" title="View Students"><i class="bi bi-eye"></i></a>
                             <a href="#" class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#editSchoolModal" 
                                 data-id="'.$row->id.'" 
                                 data-id_card="'.e($row->id_card).'" 
                                 data-amount="'.e($row->amount).'" 
                                 data-description="'.e($row->description).'" 
-                                data-payment="'.e($row->payment_details).'">
+                                data-payment="'.e($row->payment_details).'"
+                                 title="Edit"    
+                            >
                                 <i class="bi bi-pencil"></i>
                             </a>
+                            <a href="'.route('school.assignedUsers', $row->id).'" class="btn btn-sm btn-warning" title="Assigned Users"><i class="ti ti-users"></i></a>
                             <form action="'.route('schools.delete', $row->id).'" method="POST" class="d-inline delete-form">
                                 '.csrf_field().method_field('DELETE').'
-                                <button type="submit" class="btn btn-sm btn-danger"><i class="bi bi-trash"></i></button>
+                                <button type="submit" class="btn btn-sm btn-danger" title="Delete"><i class="bi bi-trash"></i></button>
                             </form>
                         </div>';
                 })
@@ -198,5 +201,50 @@ class SchoolController extends Controller
         ActivityLogger::log('Delete School', 'Deleted ' . str_ireplace(' school', '', $school_name ) . ' school and students');
 
         return redirect()->back()->with('success', 'School and associated students removed.');
+    }
+
+    public function assignedUsers($id)
+    {
+        $school = School::findOrFail($id);
+
+        $excludedRoles = ['admin', 'superadmin'];
+        
+        $users = User::whereDoesntHave('roles', function ($query) use ($excludedRoles) {
+            $query->whereIn('name', $excludedRoles);
+        })
+        ->with(['roles', 'school', 'schools'])
+        ->get();
+
+        return view('school.assign', compact('users', 'school'));
+    }
+
+    public function assignUser(School $school, User $user)
+    {
+        $role = $user->getRoleNames()->first();
+
+        if ($role === 'authority') {
+            $user->school_id = $school->id;
+            $user->save();
+        } elseif ($role === 'staff') {
+            $user->schools()->attach($school->id);
+        }
+
+        return back()->with('success', 'User assigned successfully.');
+    }
+
+    public function unassignUser(School $school, User $user)
+    {
+        $role = $user->getRoleNames()->first();
+
+        if ($role === 'authority') {
+            if ($user->school_id == $school->id) {
+                $user->school_id = null;
+                $user->save();
+            }
+        } elseif ($role === 'staff') {
+            $user->schools()->detach($school->id);
+        }
+
+        return back()->with('success', 'User unassigned successfully.');
     }
 }
