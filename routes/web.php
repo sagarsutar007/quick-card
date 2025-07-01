@@ -95,6 +95,7 @@ Route::middleware(AuthenticateManagement::class)->group(function () {
     Route::post('/', [UserController::class, 'store'])->name('users.store');  
     Route::get('/users/{id}/view', [UserController::class, 'view'])->name('users.view');
     Route::get('/users/{id}/edit', [UserController::class, 'edit'])->name('users.edit');
+    Route::post('/users/{userId}/update-profile', [UserController::class, 'updateProfile'])->name('users.updateProfile');
     Route::post('/users/{id}/upload-profile', [UserController::class, 'uploadProfileImage'])->name('users.uploadProfileImage');
     Route::put('/users/{user}/update-password', [UserController::class, 'updatePassword'])->name('users.update-password');
     Route::put('/users/{user}/update-role', [UserController::class, 'updateRole'])->name('users.update-role');

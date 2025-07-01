@@ -28,7 +28,7 @@
     <div class="card">
         <div class="card-body">
             <div class="d-flex align-items-center justify-content-between">
-                <h5 class="mb-3">Assigned Users</h5>
+                <!-- <h5 class="mb-3">Assigned Users</h5> -->
             </div>
             <table id="schoolTable" class="table table-bordered" style="width:100%">
                 <thead>
@@ -45,7 +45,19 @@
                     @foreach ($users as $index => $user)
                         <tr>
                             <td>{{ $index + 1 }}</td>
-                            <td>{{ $user->name }}</td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <img src="{{ $user->profile_image ? asset('uploads/images/profile/' . $user->profile_image) : asset('images/avatar.png') }}" alt="avatar" class="rounded-circle" width="35" />
+                                    <div class="ms-3">
+                                        <div class="user-meta-info">
+                                            <h6 class="user-name mb-0">{{ $user->name }}</h6>
+                                            <span class="user-work fs-3">
+                                                {{ ucfirst($user->designation) }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
                             <td>{{ $user->email }}</td>
                             <td>{{ $user->phone }}</td>
                             <td>{{ ucfirst($user->getRoleNames()->first()) }}</td>
@@ -86,6 +98,7 @@
 <script>
     $(document).ready(function () {
 
+        $("#schoolTable").DataTable();
 
     });
 </script>

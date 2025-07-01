@@ -111,7 +111,7 @@
                             <div class="card-body p-4">
                                 <h5 class="card-title fw-semibold">Personal Details</h5>
                                 <p class="card-subtitle mb-4">To change your personal detail , edit and save from here</p>
-                                <form action="{{ route('profile.update') }}" method="POST" enctype="multipart/form-data">
+                                <form action="{{ route('users.updateProfile', $user->id) }}" method="POST" enctype="multipart/form-data">
                                     @csrf
                                     <div class="row">
                                         <div class="col-lg-4 col-md-6">

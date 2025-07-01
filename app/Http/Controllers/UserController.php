@@ -10,7 +10,9 @@ use App\Models\UserActivity;
 use Yajra\DataTables\DataTables;
 use Illuminate\Support\Facades\File;
 use Spatie\Permission\Models\Role;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
 use Spatie\Permission\Models\Permission;
 
 class UserController extends Controller
@@ -175,7 +177,7 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'designation' => 'nullable|string|max:255',
             'phone' => 'required|string|max:20',
-            'email' => 'required|email|unique:users,email,' . Auth::id(),
+            'email' => 'required|email|unique:users,email,' . $userId,
             'address' => 'nullable|string|max:500',
             'about' => 'nullable|string|max:1000',
             'profile_image' => 'nullable|image|mimes:jpg,jpeg,png|max:20480',
