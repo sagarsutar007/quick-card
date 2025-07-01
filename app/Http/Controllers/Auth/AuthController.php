@@ -107,10 +107,10 @@ class AuthController extends Controller
 
     public function logoutFromManagement(Request $request): RedirectResponse
     {
+        ActivityLogger::log('Logout', 'User logged out successfully');
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-        ActivityLogger::log('Logout', 'User logged out successfully');
         return redirect('/login');
     }
 

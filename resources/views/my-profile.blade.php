@@ -227,7 +227,7 @@
                                         <label for="tb-email">Email</label>
                                     </div>
                                 </div>
-                                <div class="col-lg-8 col-md-12">
+                                <div class="col-lg-4 col-md-6">
                                     <div class="form-floating mb-3">
                                         <input
                                             type="text"
@@ -238,6 +238,19 @@
                                             value="{{ $user->address }}"
                                         />
                                         <label for="tb-address">Address (Area, City, Dist-Pincode)</label>
+                                    </div>
+                                </div>
+                                <div class="col-lg-4 col-md-6">
+                                    <div class="form-floating mb-3 border rounded-2" style="border-color: #dfe5ef!important;">
+                                        <div class="fs-2 text-muted mb-0 pt-2 ps-3" for="active-radio">Gender</div>
+                                        <div class="form-check form-check-inline ms-3 mb-0 mt-1">
+                                            <input class="form-check-input danger check-outline outline-danger" type="radio" id="active-radio" name="gender" value="male" {{ old('gender', $user->gender) === 'male' ? 'checked' : '' }}>
+                                            <label class="form-check-label" for="active-radio">Male</label>
+                                        </div>
+                                        <div class="form-check form-check-inline mb-1">
+                                            <input class="form-check-input danger check-outline outline-danger" type="radio" id="in-active-radio" name="gender" value="female" {{ old('gender', $user->gender) === 'female' ? 'checked' : '' }}>
+                                            <label class="form-check-label" for="in-active-radio">Female</label>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

@@ -32,6 +32,7 @@ class ProfileController extends Controller
             'about' => 'nullable|string|max:1000',
             'profile_image' => 'nullable|image|mimes:jpg,jpeg,png|max:20480',
             'cover_image' => 'nullable|image|mimes:jpg,jpeg,png|max:20480',
+            'gender' => 'required|in:male,female',
         ]);
         
         $user = Auth::user();

@@ -74,22 +74,22 @@
                     <input type="hidden" name="school_id" id="edit_school_id">
 
                     <div class="form-floating  mb-3">
-                        <input type="text" class="form-control" name="id_card" id="edit_id_card">
-                        <label for="edit_id_card" class="form-label">ID Card</label>
+                        <input type="text" class="form-control" name="id_card" id="edit_id_card" placeholder="Id Card">
+                        <label for="edit_id_card">ID Card</label>
                     </div>
 
                     <div class="form-floating  mb-3">
-                        <input type="text" class="form-control" name="amount" id="edit_amount">
-                        <label for="edit_amount" class="form-label">Amount</label>
+                        <input type="text" class="form-control" name="amount" id="edit_amount" placeholder="Amount">
+                        <label for="edit_amount">Amount</label>
                     </div>
 
                     <div class="form-floating  mb-3">
-                        <textarea class="form-control" name="payment_details" id="edit_payment_details" rows="3"></textarea>
-                        <label for="edit_payment_details" class="form-label">Payment Details</label>
+                        <textarea class="form-control" name="payment_details" id="edit_payment_details" rows="3" placeholder="Payment details"></textarea>
+                        <label for="edit_payment_details">Payment Details</label>
                     </div>
                     <div class="form-floating  mb-3">
-                        <textarea class="form-control" name="description" id="edit_description" rows="3"></textarea>
-                        <label for="edit_description" class="form-label">Descrition</label>
+                        <textarea class="form-control" name="description" id="edit_description" rows="3" placeholder="Description"></textarea>
+                        <label for="edit_description">Descrition</label>
                     </div>
                 </div>
 
