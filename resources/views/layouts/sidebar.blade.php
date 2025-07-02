@@ -25,6 +25,7 @@
                         <span class="hide-menu">Dashboard</span>
                     </a>
                 </li>
+                @can('view schools')
                 <li class="sidebar-item">
                     <a class="sidebar-link" href="{{ route('management.schools') }}" aria-expanded="false">
                         <span>
@@ -33,6 +34,8 @@
                         <span class="hide-menu">Schools</span>
                     </a>
                 </li>
+                @endcan
+                @can('view cluster')
                 <li class="sidebar-item">
                     <a class="sidebar-link" href="{{ route('management.clusters') }}" aria-expanded="false">
                         <span>
@@ -41,6 +44,8 @@
                         <span class="hide-menu">Cluster</span>
                     </a>
                 </li>
+                @endcan
+                @can('view blocks')
                 <li class="sidebar-item">
                     <a class="sidebar-link" href="{{ route('management.blocks') }}" aria-expanded="false">
                         <span>
@@ -49,6 +54,8 @@
                         <span class="hide-menu">Block</span>
                     </a>
                 </li>
+                @endcan
+                @can('view students')
                 <li class="sidebar-item">
                     <a class="sidebar-link" href="{{ route('management.students') }}" aria-expanded="false">
                         <span>
@@ -57,6 +64,8 @@
                         <span class="hide-menu">Students</span>
                     </a>
                 </li>
+                @endcan
+                @can('view users')
                 <li class="sidebar-item">
                     <a class="sidebar-link" href="{{ route('management.users') }}" aria-expanded="false">
                         <span>
@@ -65,14 +74,15 @@
                         <span class="hide-menu">Users</span>
                     </a>
                 </li>
-                <li class="sidebar-item">
+                @endcan
+                <!-- <li class="sidebar-item">
                     <a class="sidebar-link" href="{{ route('management.settings') }}" aria-expanded="false">
                         <span>
                             <i class="bi bi-sliders"></i>
                         </span>
                         <span class="hide-menu">Settings</span>
                     </a>
-                </li>
+                </li> -->
             </ul>
         </nav>
     </div>

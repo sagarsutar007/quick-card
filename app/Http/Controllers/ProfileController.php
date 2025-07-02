@@ -11,13 +11,62 @@ use Illuminate\Support\Facades\Password;
 use App\Models\UserActivity;
 
 use App\Helpers\ActivityLogger;
+use App\Models\School;
+use App\Models\Student;
 
 class ProfileController extends Controller
 {
     public function myProfile()
     {
         $user = Auth::user();
-        return view('my-profile', compact('user'));
+        $userRole = $user->getRoleNames()->first();
+        $schoolCount = 0;
+        $studentCount = 0;
+        $studentsWithPhoto = 0;
+        $studentsLocked = 0;
+
+        if ($userRole === 'superadmin' || $userRole === 'admin') {
+            $schoolCount = School::count();
+            $studentCount = Student::count();
+            $studentsWithPhoto = Student::whereNotNull('photo')->where('photo', '!=', '')->count();
+            $studentsLocked = Student::whereNotNull('photo')->where('lock', 1)->count();
+        } elseif ($userRole === 'staff') {
+            $schoolIds = $user->schools->pluck('id');
+            $schoolCount = $schoolIds->count();
+            $studentCount = Student::whereIn('school_id', $schoolIds)->count();
+            $studentsWithPhoto = Student::whereIn('school_id', $schoolIds)
+                                        ->whereNotNull('photo')
+                                        ->where('photo', '!=', '')
+                                        ->count();
+
+            $studentsLocked = Student::whereIn('school_id', $schoolIds)
+                                        ->whereNotNull('photo')
+                                        ->where('lock', 1)
+                                        ->count();
+        } elseif ($userRole === 'authority') {
+            $schoolId = $user->school_id;
+            $schoolCount = $schoolId ? 1 : 0;
+            $studentCount = Student::where('school_id', $schoolId)->count();
+            $studentsWithPhoto = Student::where('school_id', $schoolId)
+                                        ->whereNotNull('photo')
+                                        ->where('photo', '!=', '')
+                                        ->count();
+            $studentsLocked = Student::where('school_id', $schoolId)
+                                        ->whereNotNull('photo')
+                                        ->where('lock', 1)
+                                        ->count();
+        }
+
+        $studentsWithoutPhoto = $studentCount - $studentsWithPhoto;
+
+        return view('my-profile', compact(
+            'user',
+            'schoolCount',
+            'studentCount',
+            'studentsWithPhoto',
+            'studentsWithoutPhoto',
+            'studentsLocked'
+        ));
     }
     
 

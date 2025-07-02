@@ -35,17 +35,17 @@
                 <div class="d-flex align-items-center justify-content-around m-4">
                 <div class="text-center">
                     <i class="ti ti-file-description fs-6 d-block mb-2"></i>
-                    <h4 class="mb-0 fw-semibold lh-1">0</h4>
+                    <h4 class="mb-0 fw-semibold lh-1">{{ $studentCount }}</h4>
                     <p class="mb-0 fs-4">Students</p>
                 </div>
                 <div class="text-center">
                     <i class="ti ti-user-circle fs-6 d-block mb-2"></i>
-                    <h4 class="mb-0 fw-semibold lh-1">0</h4>
+                    <h4 class="mb-0 fw-semibold lh-1">{{ $studentsWithPhoto }}</h4>
                     <p class="mb-0 fs-4">Uploaded</p>
                 </div>
                 <div class="text-center">
                     <i class="ti ti-user-check fs-6 d-block mb-2"></i>
-                    <h4 class="mb-0 fw-semibold lh-1">0</h4>
+                    <h4 class="mb-0 fw-semibold lh-1">{{ $studentsLocked }}</h4>
                     <p class="mb-0 fs-4">Locked</p>
                 </div>
                 </div>
@@ -159,7 +159,7 @@
     <div class="tab-content" id="pills-tabContent">
         <div class="tab-pane fade show active" id="pills-profile" role="tabpanel" aria-labelledby="pills-profile-tab" tabindex="0">
             <div class="row">
-                <div class="col-lg-4">
+                <div class="col-lg-3">
                     <x-profile-card 
                         intro="{{ $user->about }}"
                         institute="{{ $user->designation }}"
@@ -168,7 +168,7 @@
                         address="{{ $user->address }}"
                     />
                 </div>
-                <div class="col-lg-8">
+                <div class="col-lg-9">
                     <form action="{{ route('profile.update') }}" method="POST" enctype="multipart/form-data">
                         @csrf
                         <div class="card shadow-none border">
@@ -237,7 +237,7 @@
                                             placeholder="Enter Address"
                                             value="{{ $user->address }}"
                                         />
-                                        <label for="tb-address">Address (Area, City, Dist-Pincode)</label>
+                                        <label for="tb-address">Area, City-Pincode</label>
                                     </div>
                                 </div>
                                 <div class="col-lg-4 col-md-6">

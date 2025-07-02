@@ -36,17 +36,17 @@
                 <div class="d-flex align-items-center justify-content-around m-4">
                 <div class="text-center">
                     <i class="ti ti-file-description fs-6 d-block mb-2"></i>
-                    <h4 class="mb-0 fw-semibold lh-1">0</h4>
+                    <h4 class="mb-0 fw-semibold lh-1">{{ $studentCount }}</h4>
                     <p class="mb-0 fs-4">Students</p>
                 </div>
                 <div class="text-center">
                     <i class="ti ti-user-circle fs-6 d-block mb-2"></i>
-                    <h4 class="mb-0 fw-semibold lh-1">0</h4>
+                    <h4 class="mb-0 fw-semibold lh-1">{{ $studentsWithPhoto }}</h4>
                     <p class="mb-0 fs-4">Uploaded</p>
                 </div>
                 <div class="text-center">
                     <i class="ti ti-user-check fs-6 d-block mb-2"></i>
-                    <h4 class="mb-0 fw-semibold lh-1">0</h4>
+                    <h4 class="mb-0 fw-semibold lh-1">{{ $studentsLocked }}</h4>
                     <p class="mb-0 fs-4">Locked</p>
                 </div>
                 </div>
@@ -120,11 +120,14 @@
                         </a>
                     </li>
                     @endif
+
+                    @can('edit user')
                     <li class="position-relative">
                         <a class="btn btn-secondary" href="{{ route('users.edit', $user->id) }}">
                             <i class="ti ti-pencil"></i> Edit User
                         </a>
                     </li>
+                    @endcan
                 </ul>
             </div>
             </div>

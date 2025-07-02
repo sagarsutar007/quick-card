@@ -454,13 +454,19 @@ class StudentController extends Controller
                 })
                 ->addIndexColumn()
                 ->editColumn('student_code', fn($row) => $row->student_code)
-                ->editColumn('name', fn($row) =>
-                    '<span class="editable" contenteditable="true" data-id="'.$row->id.'" data-field="name">'.e($row->name).'</span>')
-                ->editColumn('class', fn($row) =>
-                    '<span class="editable" contenteditable="true" data-id="'.$row->id.'" data-field="class">'.e($row->class).'</span>')
-                ->editColumn('dob', fn($row) =>
-                '<span class="editable" contenteditable="true" data-id="'.$row->id.'" data-field="dob">'.e($row->dob ? date('d/m/Y', strtotime($row->dob)) : 'N/A').'</span>')
-                ->editColumn('photo', fn($row) => $row->photo 
+                ->editColumn('name', function ($row) {
+                    $canEdit = auth()->user()->can('edit student');
+                    return '<span class="editable" ' . ($canEdit ? 'contenteditable="true"' : '') . ' data-id="'.$row->id.'" data-field="name">'.e($row->name).'</span>';
+                })
+                ->editColumn('class', function ($row) {
+                    $canEdit = auth()->user()->can('edit student');
+                    return '<span class="editable" ' . ($canEdit ? 'contenteditable="true"' : '') . ' data-id="'.$row->id.'" data-field="class">'.e($row->class).'</span>';
+                })
+                ->editColumn('dob', function ($row) {
+                    $canEdit = auth()->user()->can('edit student');
+                    $formattedDob = $row->dob ? date('d/m/Y', strtotime($row->dob)) : 'N/A';
+                    return '<span class="editable" ' . ($canEdit ? 'contenteditable="true"' : '') . ' data-id="'.$row->id.'" data-field="dob">'.e($formattedDob).'</span>';
+                })->editColumn('photo', fn($row) => $row->photo 
                 ? '<img src="'.asset('uploads/images/students/' . $row->photo).'" width="40">' 
                 : 'N/A')
                 ->editColumn('school', function ($row) {

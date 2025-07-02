@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 
 use App\Helpers\ActivityLogger;
+use App\Models\School;
+use App\Models\Student;
 use App\Models\User;
 use App\Models\UserActivity;
 use Yajra\DataTables\DataTables;
@@ -96,13 +98,61 @@ class UserController extends Controller
         $role = Role::findById($request->role_id);
         $user->assignRole($role->name);
 
+        ActivityLogger::log('Create User', 'Created ' . str_ireplace(' user', '', $data['name']) . ' with ' . $role->name . ' role!');
+
         return redirect()->route('management.users')->with('success', 'User created successfully.');
     }
 
     public function view($id)
     {
         $user = User::find($id);
-        return view('users.view', compact('user'));
+        $userRole = $user->getRoleNames()->first();
+        $schoolCount = 0;
+        $studentCount = 0;
+        $studentsWithPhoto = 0;
+        $studentsLocked = 0;
+
+        if ($userRole === 'superadmin' || $userRole === 'admin') {
+            $schoolCount = School::count();
+            $studentCount = Student::count();
+            $studentsWithPhoto = Student::whereNotNull('photo')->where('photo', '!=', '')->count();
+            $studentsLocked = Student::whereNotNull('photo')->where('lock', 1)->count();
+        } elseif ($userRole === 'staff') {
+            $schoolIds = $user->schools->pluck('id');
+            $schoolCount = $schoolIds->count();
+            $studentCount = Student::whereIn('school_id', $schoolIds)->count();
+            $studentsWithPhoto = Student::whereIn('school_id', $schoolIds)
+                                        ->whereNotNull('photo')
+                                        ->where('photo', '!=', '')
+                                        ->count();
+
+            $studentsLocked = Student::whereIn('school_id', $schoolIds)
+                                        ->whereNotNull('photo')
+                                        ->where('lock', 1)
+                                        ->count();
+        } elseif ($userRole === 'authority') {
+            $schoolId = $user->school_id;
+            $schoolCount = $schoolId ? 1 : 0;
+            $studentCount = Student::where('school_id', $schoolId)->count();
+            $studentsWithPhoto = Student::where('school_id', $schoolId)
+                                        ->whereNotNull('photo')
+                                        ->where('photo', '!=', '')
+                                        ->count();
+            $studentsLocked = Student::where('school_id', $schoolId)
+                                        ->whereNotNull('photo')
+                                        ->where('lock', 1)
+                                        ->count();
+        }
+
+        $studentsWithoutPhoto = $studentCount - $studentsWithPhoto;
+        return view('users.view', compact(
+            'user',
+            'schoolCount',
+            'studentCount',
+            'studentsWithPhoto',
+            'studentsWithoutPhoto',
+            'studentsLocked'
+        ));
     }
 
     public function edit($id)
@@ -154,6 +204,8 @@ class UserController extends Controller
 
         $user->profile_image = $filename;
         $user->save();
+
+        ActivityLogger::log('Updated Profile Image', 'Updated ' . str_ireplace(' user', '', $data['name']) . ' profile image!');
 
         return response()->json([
             'message' => 'Profile image uploaded successfully',
@@ -231,7 +283,7 @@ class UserController extends Controller
 
         $user->save();
 
-        ActivityLogger::log('Profile Update', 'User profile updated successfully');
+        ActivityLogger::log('Update Profile', 'User profile updated successfully');
         
         return redirect()->back()->with('success', 'Profile updated successfully.');
     }
@@ -240,6 +292,8 @@ class UserController extends Controller
     {
         $user = User::findOrFail($id);
         $user->syncRoles($request->role);
+
+        ActivityLogger::log('Update Role', 'User ' . $user->name . ' role updated to ' . $request->role . ' successfully');
         
         return redirect()->back()->with('success', 'Role updated successfully');
     }
@@ -248,6 +302,8 @@ class UserController extends Controller
     {
         $user = User::findOrFail($id);
         $user->syncPermissions($request->permissions ?? []);
+
+        ActivityLogger::log('Update Permissions', 'User ' . $user->name . ' permission updated successfully');
         
         return redirect()->back()->with('success', 'Permissions updated successfully');
     }
@@ -255,6 +311,7 @@ class UserController extends Controller
     public function removeSchool($userId, $schoolId)
     {
         $user = User::findOrFail($userId);
+        $school = \App\Models\School::find($schoolId);
 
         if ($user->hasRole('authority')) {
             if ($user->school_id == $schoolId) {
@@ -265,7 +322,15 @@ class UserController extends Controller
             $user->schools()->detach($schoolId);
         }
 
+        $schoolName = $school ? $school->school_name : 'Unknown School';
+
+        ActivityLogger::log(
+            'Removed School Assignment',
+            'User "' . $user->name . '" was removed from school "' . $schoolName . '"'
+        );
+
         return back()->with('success', 'School removed successfully.');
     }
+
 
 }
