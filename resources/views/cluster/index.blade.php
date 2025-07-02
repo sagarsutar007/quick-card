@@ -28,9 +28,11 @@
         <div class="card-body">
             <div class="d-flex align-items-center justify-content-between">
                 <h5 class="mb-3">Cluster</h5>
+                @can('add cluster')
                 <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#clusterModal">
                     <i class="ti ti-plus fs-5 me-2"></i> Add New
                 </button>
+                @endcan
             </div>
             <table id="clusterTable" class="table table-bordered" style="width:100%">
                 <thead>

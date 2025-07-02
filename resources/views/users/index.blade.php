@@ -39,6 +39,7 @@
                 <thead class="header-item">
                     <th>Sl.</th>
                     <th>Name</th>
+                    <th>Role</th>
                     <th>Email</th>
                     <th>Location</th>
                     <th>Phone</th>
@@ -50,25 +51,39 @@
                                 <td>{{ $index + 1 }}</td>
                                 <td>
                                     <div class="d-flex align-items-center">
-                                        <img src="{{ $user->profile_image ? asset('uploads/images/profile/' . $user->profile_image) : asset('images/avatar.png') }}" alt="avatar" class="rounded-circle" width="35" />
+                                        <img src="{{ $user->profile_image ? asset('uploads/images/profile/' . $user->profile_image) : asset('images/profile/user-4.jpg') }}" alt="avatar" class="rounded-circle" width="35" />
                                         <div class="ms-3">
                                             <div class="user-meta-info">
                                                 <h6 class="user-name mb-0">{{ $user->name }}</h6>
-                                                <span class="user-work fs-3">
-                                                    {{ ucfirst(optional($user->roles->first())->name ?? 'N/A') }}
+                                                <span class="user-work fs-2 fst-italic">
+                                                    {{ ucfirst($user->designation) }}
                                                 </span>
                                             </div>
                                         </div>
                                     </div>
                                 </td>
+                                <td>{{ ucfirst(optional($user->roles->first())->name ?? 'N/A') }}</td>
                                 <td>{{ $user->email }}</td>
                                 <td>{{ $user->address ?? 'N/A' }}</td>
                                 <td>{{ $user->phone ?? 'N/A' }}</td>
                                 <td>
                                     <div class="action-btn">
+                                        @can('view user')
                                         <a href="{{ route('users.view', $user->id) }}" class="btn btn-info btn-sm" title="View">
                                             <i class="ti ti-eye fs-5"></i>
                                         </a>
+                                        @endcan
+                                        @can('edit user')
+                                        <a href="{{ route('users.edit', $user->id) }}" class="btn btn-secondary btn-sm ms-2" title="Edit">
+                                            <i class="ti ti-pencil fs-5"></i>
+                                        </a>
+                                        @endcan
+                                        @can('view user permissions')
+                                        <a href="{{ route('users.edit', $user->id) . '?tab=permissions' }}" class="btn btn-warning btn-sm ms-2" title="Permissions">
+                                            <i class="ti ti-key fs-5"></i>
+                                        </a>
+                                        @endcan
+                                        @can('delete user')
                                         <form action="{{ route('users.destroy', $user->id) }}" method="POST" class="d-inline">
                                             @csrf
                                             @method('DELETE')
@@ -76,6 +91,7 @@
                                                 <i class="ti ti-trash fs-5"></i>
                                             </button>
                                         </form>
+                                        @endcan
                                     </div>
                                 </td>
                             </tr>

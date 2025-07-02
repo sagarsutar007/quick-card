@@ -34,26 +34,34 @@
             <div class="d-flex align-items-center justify-content-between">
                 <h5 class="mb-3">Students</h5>
                 <div class="btn-group flex-wrap">
+                    @can('add student')
                     <a class="btn btn-primary mb-3" href="{{ route('student.add', ['school_id' => $school->id]) }}">
                         <i class="ti ti-plus fs-5 me-2"></i>
                         <span class="d-none d-sm-inline">Add New</span>
                     </a>
+                    @endcan
+                    @can('import student')
                     <button class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#excelModal">
                         <i class="ti ti-file-spreadsheet fs-5 me-2"></i>
                         <span class="d-none d-sm-inline">Import Excel</span>
                     </button>
+                    @endcan
+                    @can('manage multiple student downloads')
                     <button id="downloadSelectedBtn" class="btn btn-secondary mb-3">
                         <i class="ti ti-download me-1"></i>
-                        <span class="d-none d-sm-inline">Download Selected</span>
+                        <span class="d-none d-sm-inline">Download</span>
                     </button>
+                    @endcan
+                    @can('manage multiple student statuses')
                     <button id="lockSelectedBtn" class="btn btn-dark mb-3">
                         <i class="ti ti-lock me-1"></i>
-                        <span class="d-none d-sm-inline">Lock Selected</span>
+                        <span class="d-none d-sm-inline">Lock</span>
                     </button>
                     <button id="unlockSelectedBtn" class="btn btn-info mb-3">
                         <i class="ti ti-lock-off me-1"></i>
-                        <span class="d-none d-sm-inline">Unlock Selected</span>
+                        <span class="d-none d-sm-inline">Unlock</span>
                     </button>
+                    @endcan
                 </div>
             </div>
             <div id="lg-temp" style="display: none;"></div>

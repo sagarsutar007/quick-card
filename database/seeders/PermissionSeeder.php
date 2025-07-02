@@ -45,7 +45,7 @@ class PermissionSeeder extends Seeder
             'delete user',
             'view user',
             'view users',
-            'view user details',
+            'view user permissions',
             'assign role',
             'assign permissions',
             'assign school',
@@ -53,6 +53,11 @@ class PermissionSeeder extends Seeder
 
         foreach ($permissions as $permission) {
             Permission::firstOrCreate(['name' => $permission]);
+        }
+
+        $superadminRole = Role::where('name', 'superadmin')->first();
+        if ($superadminRole) {
+            $superadminRole->syncPermissions(Permission::all());
         }
 
         $adminRole = Role::where('name', 'admin')->first();

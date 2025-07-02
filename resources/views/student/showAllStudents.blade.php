@@ -29,13 +29,18 @@
             <div class="d-flex align-items-center justify-content-between">
                 <h5 class="mb-3">All Students</h5>
                 <div class="btn-group">
+                    @can('add student')
                     <a class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#addNewModal">
                         <i class="ti ti-plus fs-5 me-2"></i> Add New
                     </a>
+                    @endcan
+                    @can('manage multiple student downloads')
                     <button id="downloadSelectedBtn" class="btn btn-secondary mb-3">
                         <i class="ti ti-download me-1"></i>
                         <span class="d-none d-sm-inline">Download Selected</span>
                     </button>
+                    @endcan
+                    @can('manage multiple student statuses')
                     <button id="lockSelectedBtn" class="btn btn-dark mb-3">
                         <i class="ti ti-lock me-1"></i>
                         <span class="d-none d-sm-inline">Lock Selected</span>
@@ -44,6 +49,7 @@
                         <i class="ti ti-lock-off me-1"></i>
                         <span class="d-none d-sm-inline">Unlock Selected</span>
                     </button>
+                    @endcan
                 </div>
             </div>
             <div id="lg-temp" style="display: none;"></div>

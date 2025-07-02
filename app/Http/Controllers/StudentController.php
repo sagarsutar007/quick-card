@@ -19,8 +19,34 @@ use App\Models\Student;
 
 class StudentController extends Controller
 {
-    public function index($id) {
-        $school = School::find($id);
+    public function index($id)
+    {
+        $loggedInUser = auth()->user();
+        $userRole = $loggedInUser->getRoleNames()->first();
+
+        $schoolQuery = School::query();
+
+        if (in_array($userRole, ['authority', 'custom'])) {
+            if ($loggedInUser->school_id == $id) {
+                $schoolQuery->where('id', $id);
+            } else {
+                abort(403, 'Unauthorized access to this school.');
+            }
+        } elseif ($userRole === 'staff') {
+            $schoolIds = $loggedInUser->schools->pluck('id')->toArray();
+            if (in_array($id, $schoolIds)) {
+                $schoolQuery->where('id', $id);
+            } else {
+                abort(403, 'Unauthorized access to this school.');
+            }
+        } elseif (in_array($userRole, ['admin', 'superadmin'])) {
+            $schoolQuery->where('id', $id);
+        } else {
+            abort(403, 'Unauthorized role.');
+        }
+
+        $school = $schoolQuery->firstOrFail();
+
         return view('student.index', compact('id', 'school'));
     }
 
@@ -79,12 +105,19 @@ class StudentController extends Controller
             })
             ->addIndexColumn()
             ->editColumn('student_code', fn($row) => $row->student_code)
-            ->editColumn('name', fn($row) =>
-                '<span class="editable" contenteditable="true" data-id="'.$row->id.'" data-field="name">'.e($row->name).'</span>')
-            ->editColumn('class', fn($row) =>
-                '<span class="editable" contenteditable="true" data-id="'.$row->id.'" data-field="class">'.e($row->class).'</span>')
-            ->editColumn('dob', fn($row) =>
-                '<span class="editable" contenteditable="true" data-id="'.$row->id.'" data-field="dob">'.e($row->dob ? date('d/m/Y', strtotime($row->dob)) : 'N/A').'</span>')
+            ->editColumn('name', function ($row) {
+                $canEdit = auth()->user()->can('edit student');
+                return '<span class="editable" ' . ($canEdit ? 'contenteditable="true"' : '') . ' data-id="'.$row->id.'" data-field="name">'.e($row->name).'</span>';
+            })
+            ->editColumn('class', function ($row) {
+                $canEdit = auth()->user()->can('edit student');
+                return '<span class="editable" ' . ($canEdit ? 'contenteditable="true"' : '') . ' data-id="'.$row->id.'" data-field="class">'.e($row->class).'</span>';
+            })
+            ->editColumn('dob', function ($row) {
+                $canEdit = auth()->user()->can('edit student');
+                $formattedDob = $row->dob ? date('d/m/Y', strtotime($row->dob)) : 'N/A';
+                return '<span class="editable" ' . ($canEdit ? 'contenteditable="true"' : '') . ' data-id="'.$row->id.'" data-field="dob">'.e($formattedDob).'</span>';
+            })
             ->editColumn('photo', fn($row) => $row->photo 
                 ? '<img src="'.asset('uploads/images/students/' . $row->photo).'" width="40">' 
                 : 'N/A')
@@ -96,47 +129,55 @@ class StudentController extends Controller
             ->editColumn('updated_at', fn($row) => $row->updated_at?->format('d M Y h:i A') ?? '')
             ->addColumn('action', function ($row) {
                 $buttons = '';
-                
                 if ($row->lock) {
+                    if (auth()->user()->can('manage student status')) {
                     $buttons .= '<button data-id="' . $row->id . '" class="btn btn-sm btn-secondary toggle-lock" title="Unlock Student">
                                     <i class="ti ti-lock-off"></i>
                                 </button>';
+                    }
                 } else {
 
-                    $buttons .= '<button data-id="' . $row->id . '" class="btn btn-sm btn-info upload-photo" title="Upload Photo"><i class="bi bi-upload"></i></button>';
+                    if (auth()->user()->can('upload student image')) {
+                        $buttons .= '<button data-id="' . $row->id . '" class="btn btn-sm btn-info upload-photo" title="Upload Photo"><i class="bi bi-upload"></i></button>';
+                    }
                     
                     if (!empty($row->photo) && file_exists(public_path('uploads/images/students/' . $row->photo))) {
-                        $buttons .= '<a href="'.asset('uploads/images/students/' . $row->photo).'" class="btn btn-sm btn-primary view-photo" data-fancybox="gallery" data-caption="'.e($row->name).'" title="View Photo">
-                                        <i class="bi bi-image"></i>
-                                    </a>';
+                        if (auth()->user()->can('view student image')) {
+                            $buttons .= '<a href="'.asset('uploads/images/students/' . $row->photo).'" class="btn btn-sm btn-primary view-photo" data-fancybox="gallery" data-caption="'.e($row->name).'" title="View Photo">
+                                            <i class="bi bi-image"></i>
+                                        </a>';
+                        }
 
-                        $buttons .= '<a href="'.route('students.downloadPhoto', $row->id).'" class="btn btn-sm btn-success" title="Download Photo">
-                                        <i class="bi bi-download"></i>
-                                    </a>';
-
+                        if (auth()->user()->can('download student image')) {
+                            $buttons .= '<a href="'.route('students.downloadPhoto', $row->id).'" class="btn btn-sm btn-success" title="Download Photo">
+                                            <i class="bi bi-download"></i>
+                                        </a>';
+                        }
                         
+                        if (auth()->user()->can('remove student image')) {
+                            $buttons .= '<button data-id="' . $row->id . '" class="btn btn-sm btn-warning remove-photo" title="Remove Photo">
+                                            <i class="ti ti-photo-x"></i>
+                                        </button>';
+                        }
 
-                        $buttons .= '<button data-id="' . $row->id . '" class="btn btn-sm btn-warning remove-photo" title="Remove Photo">
-                                        <i class="ti ti-photo-x"></i>
-                                    </button>';
-
-                        $buttons .= '<button data-id="' . $row->id . '" class="btn btn-sm btn-dark toggle-lock" title="Lock Student">
+                        if (auth()->user()->can('manage student status')) {
+                            $buttons .= '<button data-id="' . $row->id . '" class="btn btn-sm btn-dark toggle-lock" title="Lock Student">
                                         <i class="ti ti-lock"></i>
                                     </button>';
+                        }
                     }
-                                
-                    $buttons .= '<form action="' . route('students.delete', $row->id) . '" method="POST" class="d-inline delete-form">
+                         
+                    if (auth()->user()->can('delete student')) {
+                        $buttons .= '<form action="' . route('students.delete', $row->id) . '" method="POST" class="d-inline delete-form">
                                     ' . csrf_field() . method_field('DELETE') . '
                                     <button type="submit" class="btn btn-sm btn-danger" title="Delete Student">
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 </form>';
+                    }
                 }
-
                 return '<div class="d-inline-flex gap-1">' . $buttons . '</div>';
             })
-
-            
             ->rawColumns(['name', 'class', 'dob', 'status', 'photo', 'action'])
             ->make(true);
     }
@@ -438,39 +479,49 @@ class StudentController extends Controller
                     $buttons = '';
                     
                     if ($row->lock) {
-                        $buttons .= '<button data-id="' . $row->id . '" class="btn btn-sm btn-secondary toggle-lock" title="Unlock Student">
-                                        <i class="ti ti-lock-off"></i>
-                                    </button>';
-                    } else {
-
-                        $buttons .= '<button data-id="' . $row->id . '" class="btn btn-sm btn-info upload-photo" title="Upload Photo"><i class="bi bi-upload"></i></button>';
-                        
-                        if (!empty($row->photo) && file_exists(public_path('uploads/images/students/' . $row->photo))) {
-                            $buttons .= '<a href="'.asset('uploads/images/students/' . $row->photo).'" class="btn btn-sm btn-primary view-photo" data-fancybox="gallery" data-caption="'.e($row->name).'" title="View Photo">
-                                            <i class="bi bi-image"></i>
-                                        </a>';
-
-                            $buttons .= '<a href="'.route('students.downloadPhoto', $row->id).'" class="btn btn-sm btn-success" title="Download Photo">
-                                            <i class="bi bi-download"></i>
-                                        </a>';
-
-                            
-
-                            $buttons .= '<button data-id="' . $row->id . '" class="btn btn-sm btn-warning remove-photo" title="Remove Photo">
-                                            <i class="ti ti-photo-x"></i>
-                                        </button>';
-
-                            $buttons .= '<button data-id="' . $row->id . '" class="btn btn-sm btn-dark toggle-lock" title="Lock Student">
-                                            <i class="ti ti-lock"></i>
+                        if (auth()->user()->can('manage student status')) {
+                            $buttons .= '<button data-id="' . $row->id . '" class="btn btn-sm btn-secondary toggle-lock" title="Unlock Student">
+                                            <i class="ti ti-lock-off"></i>
                                         </button>';
                         }
-                                
-                        $buttons .= '<form action="' . route('students.delete', $row->id) . '" method="POST" class="d-inline delete-form">
-                                    ' . csrf_field() . method_field('DELETE') . '
-                                    <button type="submit" class="btn btn-sm btn-danger" title="Delete Student">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </form>';
+                    } else {
+                        if (auth()->user()->can('upload student image')) {
+                            $buttons .= '<button data-id="' . $row->id . '" class="btn btn-sm btn-info upload-photo" title="Upload Photo"><i class="bi bi-upload"></i></button>';
+                        }
+
+                        if (!empty($row->photo) && file_exists(public_path('uploads/images/students/' . $row->photo))) {
+                            if (auth()->user()->can('view student image')) {
+                                $buttons .= '<a href="'.asset('uploads/images/students/' . $row->photo).'" class="btn btn-sm btn-primary view-photo" data-fancybox="gallery" data-caption="'.e($row->name).'" title="View Photo">
+                                                <i class="bi bi-image"></i>
+                                            </a>';
+                            }
+                            if (auth()->user()->can('download student image')) {
+                                $buttons .= '<a href="'.route('students.downloadPhoto', $row->id).'" class="btn btn-sm btn-success" title="Download Photo">
+                                            <i class="bi bi-download"></i>
+                                        </a>';
+                            }
+                            
+                            if (auth()->user()->can('remove student image')) {
+                                $buttons .= '<button data-id="' . $row->id . '" class="btn btn-sm btn-warning remove-photo" title="Remove Photo">
+                                                <i class="ti ti-photo-x"></i>
+                                            </button>';
+                            }
+
+                            if (auth()->user()->can('manage student status')) {
+                                $buttons .= '<button data-id="' . $row->id . '" class="btn btn-sm btn-dark toggle-lock" title="Lock Student">
+                                                <i class="ti ti-lock"></i>
+                                            </button>';
+                            }
+                        }
+                        
+                        if (auth()->user()->can('delete student')) {
+                            $buttons .= '<form action="' . route('students.delete', $row->id) . '" method="POST" class="d-inline delete-form">
+                                        ' . csrf_field() . method_field('DELETE') . '
+                                        <button type="submit" class="btn btn-sm btn-danger" title="Delete Student">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>';
+                        }
                     }
 
                     return '<div class="d-inline-flex gap-1">' . $buttons . '</div>';

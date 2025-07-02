@@ -33,18 +33,22 @@
                     <span class="d-none d-md-block">Account</span> 
                 </button>
             </li>
+            @can('view user permissions')
             <li class="nav-item" role="presentation">
                 <button class="nav-link position-relative rounded-0 d-flex align-items-center justify-content-center bg-transparent fs-3 py-4" id="pills-permissions-tab" data-bs-toggle="pill" data-bs-target="#pills-permissions" type="button" role="tab" aria-controls="pills-permissions" aria-selected="false">
                     <i class="ti ti-bell me-2 fs-6"></i>
                     <span class="d-none d-md-block">Permissions</span> 
                 </button>
             </li>
+            @endcan
+            @can('assign school')
             <li class="nav-item" role="presentation">
                 <button class="nav-link position-relative rounded-0 d-flex align-items-center justify-content-center bg-transparent fs-3 py-4" id="pills-schools-tab" data-bs-toggle="pill" data-bs-target="#pills-schools" type="button" role="tab" aria-controls="pills-schools" aria-selected="false">
                     <i class="ti ti-building-bank me-2 fs-6"></i>
                     <span class="d-none d-md-block">Schools</span> 
                 </button>
             </li>
+            @endcan
         </ul>
         <div class="card-body">
             <div class="tab-content" id="pills-tabContent">
@@ -257,6 +261,7 @@
                         <div class="col-lg-12">
                             <div class="row">
                                 <!-- Roles Section -->
+                                @can('assign role')
                                 <div class="col-lg-4 col-md-4">
                                     <div class="card">
                                         <div class="card-body p-4">
@@ -282,8 +287,9 @@
                                         </div>
                                     </div>
                                 </div>
-                                
+                                @endcan
                                 <!-- Permissions Section -->
+                                
                                 <div class="col-lg-8 col-md-8">
                                     <div class="card">
                                         <div class="card-body p-4">
@@ -309,9 +315,11 @@
                                                         </div>
                                                     @endforeach
                                                 </div>
+                                                @can('assign permissions')
                                                 <div class="text-end">
                                                     <button type="submit" class="btn btn-primary">Update Permissions</button>
                                                 </div>
+                                                @endcan
                                             </form>
                                         </div>
                                     </div>
@@ -347,11 +355,13 @@
                                             <td>{{ $school->district->name ?? '-' }}</td>
                                             <td>{{ $school->status?'Active':'Not Active' }}</td>
                                             <td>
+                                                @can('assign school')
                                                 <form action="{{ route('users.removeSchool', ['user' => $user->id, 'school' => $school->id]) }}" method="POST" onsubmit="return confirm('Are you sure you want to remove this school?');">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button class="btn btn-sm btn-danger">Remove</button>
                                                 </form>
+                                                @endcan
                                             </td>
                                         </tr>
                                     @endforeach

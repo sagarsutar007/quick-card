@@ -28,10 +28,16 @@
         <div class="card-body">
             <div class="d-flex align-items-center justify-content-between">
                 <h5 class="mb-3">Schools</h5>
+                @can('add school')
                 <a class="btn btn-primary mb-3" href="{{ route('schools.create') }}">
                     <i class="ti ti-plus fs-5 me-2"></i> Add New
                 </a>
+                @endcan
             </div>
+            @php
+                $userRole = auth()->user()->getRoleNames()->first();
+                $isAdminOrSuperadmin = in_array($userRole, ['admin', 'superadmin']);
+            @endphp
             <table id="schoolTable" class="table table-bordered" style="width:100%">
                 <thead>
                     <tr>
@@ -43,10 +49,12 @@
                         <th>Cluster</th>
                         <th>Data</th>
                         <th>Photos</th>
-                        <th>Send ID Card</th>
-                        <th>Amount</th>
-                        <th>Payment Details</th>
-                        <th>Description</th>
+                        @if($isAdminOrSuperadmin)
+                            <th>Send ID Card</th>
+                            <th>Amount</th>
+                            <th>Payment Details</th>
+                            <th>Description</th>
+                        @endif
                         <th>Status</th>
                         <th>Created By</th>
                         <th>Created On</th>
@@ -107,6 +115,36 @@
 <script>
     $(document).ready(function () {
 
+        const userRole = @json(auth()->user()->getRoleNames()->first());
+
+        let columns = [
+            { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
+            { data: 'code', name: 'school_code' },
+            { data: 'name', name: 'school_name' },
+            { data: 'district', name: 'districts.name' },
+            { data: 'block', name: 'blocks.name' },
+            { data: 'cluster', name: 'clusters.name' },
+            { data: 'students_count', name: 'students_count', orderable: false, searchable: false },
+            { data: 'photo_count', name: 'photo_count', orderable: false, searchable: false }
+        ];
+
+        if (['admin', 'superadmin'].includes(userRole)) {
+            columns.push(
+                { data: 'id_card', name: 'id_card' },
+                { data: 'amount', name: 'amount' },
+                { data: 'payment_details', name: 'payment_details' },
+                { data: 'description', name: 'description', orderable: false, searchable: false }
+            );
+        }
+
+        columns.push(
+            { data: 'status', name: 'status' },
+            { data: 'created_by', name: 'created_by' },
+            { data: 'created_at', name: 'created_at' },
+            { data: 'updated_at', name: 'updated_at' },
+            { data: 'action', name: 'action', orderable: false, searchable: false }
+        );
+
         $("#full-width-container").parent().css('max-width', '100%');
 
         $('#schoolTable').DataTable({
@@ -153,25 +191,7 @@
                     className: 'btn btn-secondary btn-sm'
                 }
             ],
-            columns: [
-                { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
-                { data: 'code', name: 'school_code' },
-                { data: 'name', name: 'school_name' },
-                { data: 'district', name: 'districts.name' },
-                { data: 'block', name: 'blocks.name' },
-                { data: 'cluster', name: 'clusters.name' },
-                { data: 'students_count', name: 'students_count', orderable: false, searchable: false},
-                { data: 'photo_count', name: 'photo_count', orderable: false, searchable: false},
-                { data: 'id_card', name: 'id_card' },
-                { data: 'amount', name: 'amount' },
-                { data: 'payment_details', name: 'payment_details' },
-                { data: 'description', name: 'description', orderable: false, searchable: false },
-                { data: 'status', name: 'status' },
-                { data: 'created_by', name: 'created_by' },
-                { data: 'created_at', name: 'created_at' },
-                { data: 'updated_at', name: 'updated_at' },
-                { data: 'action', name: 'action', orderable: false, searchable: false },
-            ]
+            columns: columns
         });
         
         $(document).on('submit', '.delete-form', function (e) {

@@ -59,25 +59,40 @@ class ClusterController extends Controller
                 })
 
                 ->addColumn('action', function ($row) {
-                    return '
-                        <div class="d-inline-flex gap-1">
-                            <a href="#" class="btn btn-sm btn-success"><i class="bi bi-eye"></i></a>
+                    $user = auth()->user();
+                    $actions = '<div class="d-inline-flex gap-1">';
+                    
+                    if ($user->can('view cluster')) {
+                        $actions .= '<a href="#" class="btn btn-sm btn-success" title="View"><i class="bi bi-eye"></i></a>';
+                    }
+                    
+                    if ($user->can('edit cluster')) {
+                        $actions .= '
                             <button class="btn btn-sm btn-info edit-btn" 
-                                data-id="'.$row->id.'" 
-                                data-name="'.e($row->name).'" 
-                                data-description="'.e($row->description).'"
-                                data-district="'.e($row->block->district->id ?? '').'"
-                                data-block="'.e($row->block_id).'"
-                                data-status="'.e($row->status).'"
-                            ><i class="bi bi-pencil"></i></button>
-                            <form action="'.route('blocks.delete', $row->id).'" method="POST" class="d-inline delete-form">
-                                '.csrf_field().method_field('DELETE').'
-                                <button type="submit" class="btn btn-sm btn-danger">
-                                    <i class="bi bi-trash"></i>   
+                                data-id="' . $row->id . '" 
+                                data-name="' . e($row->name) . '" 
+                                data-description="' . e($row->description) . '"
+                                data-district="' . e($row->block->district->id ?? '') . '"
+                                data-block="' . e($row->block_id) . '"
+                                data-status="' . e($row->status) . '"
+                                title="Edit"
+                            >
+                                <i class="bi bi-pencil"></i>
+                            </button>';
+                    }
+                    
+                    if ($user->can('delete cluster')) {
+                        $actions .= '
+                            <form action="' . route('blocks.delete', $row->id) . '" method="POST" class="d-inline delete-form">
+                                ' . csrf_field() . method_field('DELETE') . '
+                                <button type="submit" class="btn btn-sm btn-danger" title="Delete">
+                                    <i class="bi bi-trash"></i>
                                 </button>
-                            </form>
-                        </div>
-                    ';
+                            </form>';
+                    }
+
+                    $actions .= '</div>';
+                    return $actions;
                 })
 
                 ->rawColumns(['status', 'action'])

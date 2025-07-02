@@ -100,6 +100,9 @@ class SchoolController extends Controller
     public function getAll(Request $request)
     {
         if ($request->ajax()) {
+            $loggedInUser = auth()->user();
+            $userRole = $loggedInUser->getRoleNames()->first();
+
             $schools = School::select(
                     'schools.*',
                     'districts.name as district_name',
@@ -114,6 +117,17 @@ class SchoolController extends Controller
                 ->leftJoin('blocks', 'schools.block_id', '=', 'blocks.id')
                 ->leftJoin('clusters', 'schools.cluster_id', '=', 'clusters.id')
                 ->leftJoin('users', 'schools.created_by', '=', 'users.id');
+
+            if (in_array($userRole, ['authority', 'custom'])) {
+                if ($loggedInUser->school_id) {
+                    $schools->where('schools.id', $loggedInUser->school_id);
+                } else {
+                    $schools->whereNull('schools.id');
+                }
+            } elseif ($userRole === 'staff') {
+                $schoolIds = $loggedInUser->schools->pluck('id')->toArray();
+                $schools->whereIn('schools.id', $schoolIds);
+            }
 
             return DataTables::of($schools)
                 ->addIndexColumn()
@@ -143,25 +157,38 @@ class SchoolController extends Controller
                 ->editColumn('created_at', fn($row) => $row->created_at ? $row->created_at->format('d M Y h:i A') : '')
                 ->editColumn('updated_at', fn($row) => $row->updated_at ? $row->updated_at->format('d M Y h:i A') : '')
                 ->addColumn('action', function ($row) {
-                    return '
-                        <div class="d-inline-flex gap-1">
-                            <a href="'.route('school.students', $row->id).'" class="btn btn-sm btn-success" title="View Students"><i class="bi bi-eye"></i></a>
-                            <a href="#" class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#editSchoolModal" 
+                    $buttons = '<div class="d-inline-flex gap-1">';
+
+                        if (auth()->user()->can('view school students')) {
+                            $buttons .= '<a href="'.route('school.students', $row->id).'" class="btn btn-sm btn-success" title="View Students"><i class="bi bi-eye"></i></a>';
+                        }
+
+                        if (auth()->user()->can('edit school')) {
+                            $buttons .= '<a href="#" class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#editSchoolModal" 
                                 data-id="'.$row->id.'" 
                                 data-id_card="'.e($row->id_card).'" 
                                 data-amount="'.e($row->amount).'" 
                                 data-description="'.e($row->description).'" 
                                 data-payment="'.e($row->payment_details).'"
-                                 title="Edit"    
-                            >
-                                <i class="bi bi-pencil"></i>
-                            </a>
-                            <a href="'.route('school.assignedUsers', $row->id).'" class="btn btn-sm btn-warning" title="Assigned Users"><i class="ti ti-users"></i></a>
-                            <form action="'.route('schools.delete', $row->id).'" method="POST" class="d-inline delete-form">
-                                '.csrf_field().method_field('DELETE').'
+                                title="Edit">
+                                <i class="bi bi-pencil"></i></a>';
+                        }
+
+                        if (auth()->user()->can('assign school')) {
+                            $buttons .= '<a href="'.route('school.assignedUsers', $row->id).'" class="btn btn-sm btn-warning" title="Assigned Users"><i class="ti ti-users"></i></a>';
+                        }
+
+                        if (auth()->user()->can('delete school')) {
+                            $buttons .= '<form action="'.route('schools.delete', $row->id).'" method="POST" class="d-inline delete-form">'
+                                .csrf_field().method_field('DELETE').'
                                 <button type="submit" class="btn btn-sm btn-danger" title="Delete"><i class="bi bi-trash"></i></button>
-                            </form>
-                        </div>';
+                            </form>';
+                        }
+
+                        $buttons .= '</div>';
+
+                        return $buttons;
+
                 })
                 ->rawColumns(['code', 'name', 'status', 'photo_count', 'action'])
                 ->make(true);

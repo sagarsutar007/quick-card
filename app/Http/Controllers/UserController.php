@@ -29,6 +29,14 @@ class UserController extends Controller
             $usersQuery->whereHas('roles', function ($query) {
                 $query->whereIn('name', ['authority', 'staff']);
             });
+        } elseif ($currentUser->hasRole('staff')) {
+            $usersQuery->whereHas('roles', function ($query) {
+                $query->whereIn('name', ['authority', 'custom']);
+            });
+        } elseif ($currentUser->hasRole('custom')) {
+            $usersQuery->whereHas('roles', function ($query) {
+                $query->whereIn('name', ['authority', 'staff']);
+            });
         } else {
             abort(403, 'Unauthorized access.');
         }
@@ -105,8 +113,8 @@ class UserController extends Controller
         $userRole = $loggedInUser->getRoleNames()->first();
 
         $roleAccess = [
-            'superadmin' => ['admin', 'authority', 'staff'],
-            'admin' => ['authority', 'staff'],
+            'superadmin' => ['admin', 'authority', 'staff', 'custom'],
+            'admin' => ['authority', 'staff', 'custom'],
             'staff' => ['authority'],
         ];
 
@@ -117,7 +125,7 @@ class UserController extends Controller
         
         $assignedSchools = [];
 
-        if ($user->hasRole('authority')) {
+        if ($user->hasRole('authority') || $user->hasRole('custom')) {
             if ($user->school) {
                 $assignedSchools[] = $user->school;
             }
@@ -127,8 +135,7 @@ class UserController extends Controller
 
         return view('users.edit', compact('user', 'roles', 'permissions', 'assignedSchools'));
     }
-
-
+    
     public function uploadProfileImage(Request $request, $id)
     {
         $request->validate([
@@ -153,7 +160,6 @@ class UserController extends Controller
             'image_url' => asset('uploads/images/profile/' . $filename)
         ]);
     }
-
 
     public function updatePassword(Request $request, $userId)
     {

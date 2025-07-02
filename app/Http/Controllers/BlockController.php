@@ -39,21 +39,37 @@ class BlockController extends Controller
                     return $row->updated_at ? $row->updated_at->format('d M Y h:i A') : '';
                 })
                 ->addColumn('action', function ($row) {
-                    return '
-                        <a href="#" class="btn btn-sm btn-success">View</a>
-                        <button class="btn btn-sm btn-info edit-btn" 
-                            data-id="'.$row->id.'" 
-                            data-name="'.e($row->name).'" 
-                            data-description="'.e($row->description).'"
-                            data-district="'.e($row->district_id).'"
-                            data-status="'.e($row->status).'"
-                        >Edit</button>
-                        <form action="'.route('blocks.delete', $row->id).'" method="POST" class="d-inline delete-form">
-                            '.csrf_field().method_field('DELETE').'
-                            <button type="submit" class="btn btn-sm btn-danger">Delete</button>
-                        </form>
-                    ';
+                    $user = auth()->user();
+                    $actions = '<div class="d-inline-flex gap-1">';
+                    
+                    if ($user->can('view block details')) {
+                        $actions .= '<a href="#" class="btn btn-sm btn-success" title="View">View</a>';
+                    }
+                    
+                    if ($user->can('edit block')) {
+                        $actions .= '
+                            <button class="btn btn-sm btn-info edit-btn" 
+                                data-id="' . $row->id . '" 
+                                data-name="' . e($row->name) . '" 
+                                data-description="' . e($row->description) . '"
+                                data-district="' . e($row->district_id) . '"
+                                data-status="' . e($row->status) . '"
+                                title="Edit"
+                            >Edit</button>';
+                    }
+                    
+                    if ($user->can('delete block')) {
+                        $actions .= '
+                            <form action="' . route('blocks.delete', $row->id) . '" method="POST" class="d-inline delete-form">
+                                ' . csrf_field() . method_field('DELETE') . '
+                                <button type="submit" class="btn btn-sm btn-danger" title="Delete">Delete</button>
+                            </form>';
+                    }
+
+                    $actions .= '</div>';
+                    return $actions;
                 })
+
                 ->rawColumns(['status', 'action'])
                 ->make(true);
         }
