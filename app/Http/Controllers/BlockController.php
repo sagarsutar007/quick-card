@@ -43,7 +43,7 @@ class BlockController extends Controller
                     $actions = '<div class="d-inline-flex gap-1">';
                     
                     if ($user->can('view block details')) {
-                        $actions .= '<a href="#" class="btn btn-sm btn-success" title="View">View</a>';
+                        $actions .= '<!-- <a href="#" class="btn btn-sm btn-success" title="View">View</a> -->';
                     }
                     
                     if ($user->can('edit block')) {

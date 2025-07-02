@@ -17,6 +17,7 @@ class PermissionSeeder extends Seeder
             'edit school',
             'delete school',
             'view school students',
+            'make notes',
             'view students',
             'upload student image',
             'view student image',

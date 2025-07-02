@@ -47,7 +47,7 @@
                             <td>{{ $index + 1 }}</td>
                             <td>
                                 <div class="d-flex align-items-center">
-                                    <img src="{{ $user->profile_image ? asset('uploads/images/profile/' . $user->profile_image) : asset('images/avatar.png') }}" alt="avatar" class="rounded-circle" width="35" />
+                                    <img src="{{ $user->profile_image ? asset('uploads/images/profile/' . $user->profile_image) : asset('images/profile/user-4.jpg') }}" alt="avatar" class="rounded-circle" width="35" />
                                     <div class="ms-3">
                                         <div class="user-meta-info">
                                             <h6 class="user-name mb-0">{{ $user->name }}</h6>

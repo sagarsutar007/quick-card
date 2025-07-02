@@ -164,6 +164,10 @@ class SchoolController extends Controller
                         }
 
                         if (auth()->user()->can('edit school')) {
+                            $buttons .= '<a href="'.route('school.edit', $row->id).'" class="btn btn-sm btn-success" title="Edit School"><i class="bi bi-pencil"></i></a>';
+                        }
+
+                        if (auth()->user()->can('make notes')) {
                             $buttons .= '<a href="#" class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#editSchoolModal" 
                                 data-id="'.$row->id.'" 
                                 data-id_card="'.e($row->id_card).'" 
@@ -171,7 +175,7 @@ class SchoolController extends Controller
                                 data-description="'.e($row->description).'" 
                                 data-payment="'.e($row->payment_details).'"
                                 title="Edit">
-                                <i class="bi bi-pencil"></i></a>';
+                                <i class="ti ti-notes"></i></a>';
                         }
 
                         if (auth()->user()->can('assign school')) {
@@ -195,19 +199,53 @@ class SchoolController extends Controller
         }
     }
 
-    public function update(Request $request, $id)
+    public function editSchool(Request $request, $id) 
     {
+        $school = School::findOrFail($id);
+
+        $districts = District::where('status', 1)->orderBy('name')->get();
+        
+        $blocks = $school->district_id 
+            ? Block::where('district_id', $school->district_id)->where('status', 1)->orderBy('name')->get()
+            : collect();
+            
+        $clusters = $school->block_id 
+            ? Cluster::where('block_id', $school->block_id)->where('status', 1)->orderBy('name')->get()
+            : collect();
+
+        return view('school.edit', compact('school', 'districts', 'blocks', 'clusters'));
+    }
+
+
+    public function updateSchool(Request $request, $id)
+    {
+        $school = School::findOrFail($id);
+
         $request->validate([
-            'id_card' => 'nullable|string',
-            'amount' => 'nullable|string',
-            'payment_details' => 'nullable|string',
-            'description' => 'nullable|string',
+            'school_code' => 'required|string|max:255|unique:schools,school_code,' . $school->id,
+            'school_name' => 'required|string|max:255',
+            'udise_no' => 'nullable|string|max:255|unique:schools,udise_no,' . $school->id,
+            'district_id' => 'required|exists:districts,id',
+            'block_id' => 'required|exists:blocks,id',
+            'cluster_id' => 'required|exists:clusters,id',
+            'school_address' => 'nullable|string|max:500',
+            'status' => 'required|in:0,1',
         ]);
 
-        $school = School::findOrFail($id);
-        $school->update($request->only('id_card', 'amount', 'payment_details', 'description'));
-        ActivityLogger::log('Update School', 'Updated ' . str_ireplace(' school', '', $school->school_name) . ' school\'s text fields!');
-        return redirect()->back()->with('success', 'School info updated successfully.');
+        $school->update([
+            'school_code' => $request->school_code,
+            'school_name' => $request->school_name,
+            'udise_no' => $request->udise_no,
+            'district_id' => $request->district_id,
+            'block_id' => $request->block_id,
+            'cluster_id' => $request->cluster_id,
+            'school_address' => $request->school_address,
+            'status' => $request->status,
+        ]);
+
+        ActivityLogger::log('Updated School', 'Updated school: ' . $school->school_name);
+
+        return redirect()->route('management.schools')->with('success', 'School updated successfully.');
     }
 
     public function deleteSchool($id)
@@ -256,6 +294,11 @@ class SchoolController extends Controller
             $user->schools()->attach($school->id);
         }
 
+        ActivityLogger::log(
+            'Assigned User',
+            'User "' . $user->name . '" (' . $role . ') was assigned to school "' . $school->school_name . '"'
+        );
+
         return back()->with('success', 'User assigned successfully.');
     }
 
@@ -271,6 +314,11 @@ class SchoolController extends Controller
         } elseif ($role === 'staff') {
             $user->schools()->detach($school->id);
         }
+
+        ActivityLogger::log(
+            'Unassigned User',
+            'User "' . $user->name . '" (' . $role . ') was unassigned from school "' . $school->school_name . '"'
+        );
 
         return back()->with('success', 'User unassigned successfully.');
     }

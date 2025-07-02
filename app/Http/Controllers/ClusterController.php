@@ -63,7 +63,7 @@ class ClusterController extends Controller
                     $actions = '<div class="d-inline-flex gap-1">';
                     
                     if ($user->can('view cluster')) {
-                        $actions .= '<a href="#" class="btn btn-sm btn-success" title="View"><i class="bi bi-eye"></i></a>';
+                        $actions .= '<!-- <a href="#" class="btn btn-sm btn-success" title="View"><i class="bi bi-eye"></i></a> -->';
                     }
                     
                     if ($user->can('edit cluster')) {

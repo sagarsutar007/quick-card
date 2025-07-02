@@ -65,7 +65,8 @@ Route::middleware(AuthenticateManagement::class)->group(function () {
     Route::get('schools/{school}/authority', [SchoolController::class, 'showSetAuthorityForm'])->middleware([RoleOrPermissionMiddleware::class . ':admin|superadmin,add user'])->name('schools.setAuthorityForm');
     Route::post('schools/{school}/authority', [SchoolController::class, 'saveAuthority'])->name('schools.saveAuthority');
     Route::get('schools/get-data', [SchoolController::class, 'getAll'])->name('schools.getAll');
-    Route::get('schools/{id}/edit', [ClusterController::class, 'editSchool'])->name('schools.edit');
+    Route::get('schools/{id}/edit', [SchoolController::class, 'editSchool'])->name('school.edit');
+    Route::put('/schools/{id}/save', [SchoolController::class, 'updateSchool'])->name('schools.save');
     Route::put('/schools/{id}', [SchoolController::class, 'update'])->name('schools.update');
     Route::delete('schools/{id}/delete', [SchoolController::class, 'deleteSchool'])->name('schools.delete');
     Route::get('schools/{id}/view', [StudentController::class, 'index'])->middleware([RoleOrPermissionMiddleware::class . ':admin|superadmin,view school students'])->name('school.students');
