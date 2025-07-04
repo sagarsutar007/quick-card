@@ -42,13 +42,6 @@ class AuthController extends Controller
         if (Auth::attempt($credentials, $remember)) {
             $user = Auth::user();
 
-            if ($user->role === 'influencer') {
-                Auth::logout();
-                return back()->withErrors([
-                    'status' => 'You are not allowed to access the management portal.',
-                ])->withInput();
-            }
-
             $request->session()->regenerate();
 
             ActivityLogger::log('Login', 'User logged in successfully');
