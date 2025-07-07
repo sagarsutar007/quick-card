@@ -32,6 +32,7 @@
             </div>
             <form method="post" action="{{ route('schools.save', $school->id) }}">
                 @csrf
+                @method('PUT')
                 <div class="row">
                     <div class="col-lg-4 col-md-4 col-sm-6">
                         <div class="form-floating mb-3">

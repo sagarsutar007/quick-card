@@ -35,6 +35,10 @@ class AuthController extends Controller
         }
 
         $user = Auth::user();
+
+        if ($user->profile_image) {
+            $user->profile_image = url('uploads/images/profile/' . $user->profile_image);
+        }
         
         ActivityLogger::log('Login', 'User logged in successfully via API');
 
@@ -60,43 +64,5 @@ class AuthController extends Controller
         ]);
     }
 
-    public function getUserSchools(Request $request)
-    {
-        $user = $request->user();
-        $role = $user->getRoleNames()->first();
-
-        $schools = School::select(
-                'schools.*',
-                'districts.name as district_name',
-                'blocks.name as block_name',
-                'clusters.name as cluster_name',
-                DB::raw('(SELECT COUNT(*) FROM students WHERE students.school_id = schools.id) as students_count'),
-                DB::raw('(SELECT COUNT(*) FROM students WHERE students.school_id = schools.id AND students.photo IS NOT NULL AND students.photo != "") as photo_count'),
-                DB::raw('(SELECT COUNT(*) FROM students WHERE students.school_id = schools.id AND (students.photo IS NULL OR students.photo = "")) as no_photo_count')
-            )
-            ->leftJoin('districts', 'schools.district_id', '=', 'districts.id')
-            ->leftJoin('blocks', 'schools.block_id', '=', 'blocks.id')
-            ->leftJoin('clusters', 'schools.cluster_id', '=', 'clusters.id');
-
-        if (in_array($role, ['authority', 'custom'])) {
-            if ($user->school_id) {
-                $schools->where('schools.id', $user->school_id);
-            } else {
-                return response()->json([
-                    'schools' => []
-                ]);
-            }
-        } elseif ($role === 'staff') {
-            $schoolIds = $user->schools()->pluck('schools.id');
-            $schools->whereIn('schools.id', $schoolIds);
-        } else {
-            return response()->json([
-                'message' => 'Access denied or not supported for this role.'
-            ], 403);
-        }
-
-        return response()->json([
-            'schools' => $schools->get()
-        ]);
-    }
+    
 }

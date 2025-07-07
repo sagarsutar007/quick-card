@@ -20,11 +20,21 @@ class DashboardController extends Controller
         $studentCount = 0;
         $studentsWithPhoto = 0;
         $latestActivities = collect();
+        $basicSchoolDetails = collect();
 
         if ($userRole === 'superadmin' || $userRole === 'admin') {
             $schoolCount = School::count();
             $studentCount = Student::count();
             $studentsWithPhoto = Student::whereNotNull('photo')->where('photo', '!=', '')->count();
+
+            $basicSchoolDetails = School::select('id', 'school_name as name', 'school_address')
+                ->withCount([
+                    'students as students_without_photo_count' => function ($query) {
+                        $query->whereNull('photo')->orWhere('photo', '');
+                    }
+                ])
+                ->limit(3)
+                ->get();
 
             $latestActivities = UserActivity::with('user')
                 ->latest()
@@ -39,11 +49,21 @@ class DashboardController extends Controller
                 ->where('photo', '!=', '')
                 ->count();
 
+            $basicSchoolDetails = School::select('id', 'school_name as name', 'school_address')
+                ->whereIn('id', $schoolIds)
+                ->withCount([
+                    'students as students_without_photo_count' => function ($query) {
+                        $query->whereNull('photo')->orWhere('photo', '');
+                    }
+                ])
+                ->limit(3)
+                ->get();
+
             $latestActivities = UserActivity::where('user_id', $loggedInUser->id)
                 ->latest()
                 ->take(10)
                 ->get();
-        } elseif ($userRole === 'authority') {
+        } elseif ($userRole === 'authority' || $userRole === 'custom') {
             $schoolId = $loggedInUser->school_id;
             $schoolCount = $schoolId ? 1 : 0;
             $studentCount = Student::where('school_id', $schoolId)->count();
@@ -51,6 +71,16 @@ class DashboardController extends Controller
                 ->whereNotNull('photo')
                 ->where('photo', '!=', '')
                 ->count();
+
+            $basicSchoolDetails = School::select('id', 'school_name as name', 'school_address')
+                ->where('id', $schoolId)
+                ->withCount([
+                    'students as students_without_photo_count' => function ($query) {
+                        $query->whereNull('photo')->orWhere('photo', '');
+                    }
+                ])
+                ->limit(3)
+                ->get();
 
             $latestActivities = UserActivity::where('user_id', $loggedInUser->id)
                 ->latest()
@@ -66,6 +96,8 @@ class DashboardController extends Controller
             'students_with_photo' => $studentsWithPhoto,
             'students_without_photo' => $studentsWithoutPhoto,
             'latest_activities' => $latestActivities,
+            'school_basic_info' => $basicSchoolDetails,
         ]);
     }
+
 }

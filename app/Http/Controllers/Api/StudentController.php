@@ -12,13 +12,17 @@ class StudentController extends Controller
 {
     public function getSchoolStudents(Request $request, $schoolId)
     {
-        $query = Student::where('school_id', $schoolId);
-            
-        if ($status = $request->query('status')) {
-            if (strtolower($status) === 'uploaded') {
-                $query->where('status', 1);
-            } elseif (strtolower($status) === 'not uploaded') {
-                $query->where('status', 0);
+        $query = Student::where('school_id', $schoolId)
+            ->where('status', 1);
+
+        if ($request->has('status')) {
+            $status = strtolower($request->query('status'));
+            if ($status === 'uploaded') {
+                $query->whereNotNull('photo')->where('photo', '!=', '');
+            } elseif ($status === 'not uploaded') {
+                $query->where(function ($q) {
+                    $q->whereNull('photo')->orWhere('photo', '');
+                });
             }
         }
 
@@ -28,35 +32,34 @@ class StudentController extends Controller
 
         if ($dob = $request->query('dob')) {
             $dob = trim($dob);
-
             try {
                 if (preg_match('/^\d{2}\/\d{2}\/\d{4}$/', $dob)) {
                     $date = \Carbon\Carbon::createFromFormat('d/m/Y', $dob)->format('Y-m-d');
                     $query->whereDate('dob', $date);
                 } elseif (preg_match('/^\d{2}\/\d{2}$/', $dob)) {
                     [$day, $month] = explode('/', $dob);
-                    $query->whereRaw('DAY(dob) = ? AND MONTH(dob) = ?', [$day, $month]);
+                    $query->whereDay('dob', $day)->whereMonth('dob', $month);
                 } elseif (preg_match('/^\d{2}\/\d{4}$/', $dob)) {
                     [$month, $year] = explode('/', $dob);
-                    $query->whereRaw('MONTH(dob) = ? AND YEAR(dob) = ?', [$month, $year]);
+                    $query->whereMonth('dob', $month)->whereYear('dob', $year);
                 } elseif (preg_match('/^\d{4}$/', $dob)) {
                     $query->whereYear('dob', $dob);
                 }
             } catch (\Exception $e) {
-                
             }
         }
-        
-        $students = $query->paginate($request->get('per_page', 20));
+
+        $students = $query->get();
 
         return response()->json([
-            'data' => $students->items(),
-            'current_page' => $students->currentPage(),
-            'last_page' => $students->lastPage(),
-            'total' => $students->total(),
+            'students' => $students,
+            'permissions' => [
+                'can_upload_image' => auth()->user()->can('upload student image'),
+                'can_remove_image' => auth()->user()->can('remove student image'),
+            ]
         ]);
     }
-
+    
     public function uploadStudentPhoto(Request $request)
     {
         $request->validate([

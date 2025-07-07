@@ -16,7 +16,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::controller(AuthController::class)->group(function () {
         Route::post('/logout', 'logout');
         Route::get('/profile', 'profile');
-        Route::get('/user/schools', 'getUserSchools');
     });
 
     // Profile actions
@@ -27,7 +26,9 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     // School and student data
-    Route::get('/schools/{id}/students', [StudentController::class, 'getSchoolStudents']);
+    Route::get('/user/schools', [SchoolController::class, 'getUserSchools']);
+    Route::get('/user/search-schools', [SchoolController::class, 'search']);
+    Route::get('/schools/{schoolId}/students', [StudentController::class, 'getSchoolStudents']);
     Route::get('/dashboard', [DashboardController::class, 'show']);
 
 
