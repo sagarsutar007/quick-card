@@ -1,9 +1,11 @@
 <?php
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\SchoolController;
 use App\Http\Controllers\Api\StudentController;
 use App\Http\Controllers\ProfileController;
+
 
 Route::post('/login', [AuthController::class, 'login']);
 Route::get('/schools', [SchoolController::class, 'index']);
@@ -26,6 +28,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // School and student data
     Route::get('/schools/{id}/students', [StudentController::class, 'getSchoolStudents']);
+    Route::get('/dashboard', [DashboardController::class, 'show']);
+
 
     // Permission-restricted routes
     Route::middleware('permission:edit student')->post('/students/update', [StudentController::class, 'update']);
