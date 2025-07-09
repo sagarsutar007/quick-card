@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\File;
 use App\Models\Student;
 use App\Models\School;
 
@@ -14,6 +15,13 @@ class StudentController extends Controller
     {
         $query = Student::where('school_id', $schoolId)
             ->where('status', 1);
+
+        if ($request->has('q')) {
+            $search = strtolower(trim($request->query('q')));
+            $query->where(function ($q) use ($search) {
+                $q->whereRaw('LOWER(name) LIKE ?', ["%{$search}%"]);
+            });
+        }
 
         if ($request->has('status')) {
             $status = strtolower($request->query('status'));
@@ -25,7 +33,7 @@ class StudentController extends Controller
                 });
             }
         }
-
+        
         if ($class = $request->query('class')) {
             $query->where('class', $class);
         }
@@ -46,25 +54,37 @@ class StudentController extends Controller
                     $query->whereYear('dob', $dob);
                 }
             } catch (\Exception $e) {
+                // Optionally log the error
             }
         }
-
-        $students = $query->get();
-
+        $query->orderBy('name');
+        $perPage = $request->query('per_page', 30);
+        $students = $query->select([
+            'id', 'name', 'student_code', 'class', 'dob', 'photo', 'school_id', 'updated_at'
+        ])->paginate($perPage);
+        
         return response()->json([
-            'students' => $students,
+            'students' => $students->items(),
+            'pagination' => [
+                'current_page' => $students->currentPage(),
+                'last_page' => $students->lastPage(),
+                'per_page' => $students->perPage(),
+                'total' => $students->total(),
+                'has_more_pages' => $students->hasMorePages(),
+            ],
             'permissions' => [
                 'can_upload_image' => auth()->user()->can('upload student image'),
                 'can_remove_image' => auth()->user()->can('remove student image'),
+                'can_add_authority' => auth()->user()->can('add user') && auth()->user()->can('assign school'),
             ]
         ]);
     }
-    
+
     public function uploadStudentPhoto(Request $request)
     {
         $request->validate([
             'student_id' => 'required|exists:students,id',
-            'photo' => 'required|image|mimes:jpg,jpeg,png|max:2048',
+            'photo' => 'required|image|mimes:jpg,jpeg,png|max:20480',
         ]);
 
         $student = Student::findOrFail($request->student_id);
@@ -140,5 +160,26 @@ class StudentController extends Controller
             'message' => 'Student saved successfully!',
             'student' => $student,
         ], 201);
+    }
+
+    public function deletePhoto($studentId)
+    {
+        $student = Student::findOrFail($studentId);
+
+        // Delete photo file from server
+        if ($student->photo) {
+            $photoPath = public_path('uploads/images/students/' . $student->photo);
+            if (File::exists($photoPath)) {
+                File::delete($photoPath);
+            }
+        }
+
+        // Remove photo reference from DB
+        $student->photo = null;
+        $student->status = 0; // optional
+        $student->updated_by = auth()->id();
+        $student->save();
+
+        return response()->json(['message' => 'Photo removed successfully.']);
     }
 }

@@ -5,7 +5,7 @@ use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\SchoolController;
 use App\Http\Controllers\Api\StudentController;
 use App\Http\Controllers\ProfileController;
-
+use App\Http\Middleware\RoleOrPermissionMiddleware;
 
 Route::post('/login', [AuthController::class, 'login']);
 Route::get('/schools', [SchoolController::class, 'index']);
@@ -31,10 +31,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/schools/{schoolId}/students', [StudentController::class, 'getSchoolStudents']);
     Route::get('/dashboard', [DashboardController::class, 'show']);
 
-
     // Permission-restricted routes
-    Route::middleware('permission:edit student')->post('/students/update', [StudentController::class, 'update']);
-    Route::middleware('permission:upload student image')->post('/students/upload-photo', [StudentController::class, 'uploadStudentPhoto']);
-    Route::middleware('permission:add student')->post('/students', [StudentController::class, 'saveStudent']);
-
+    Route::post('/students/update', [StudentController::class, 'update'])->middleware([RoleOrPermissionMiddleware::class . ':admin|superadmin,edit student']);
+    Route::post('/students/upload-photo', [StudentController::class, 'uploadStudentPhoto'])->middleware([RoleOrPermissionMiddleware::class . ':admin|superadmin,upload student image']);
+    Route::post('/students', [StudentController::class, 'saveStudent'])->middleware([RoleOrPermissionMiddleware::class . ':admin|superadmin,add student']);
+    Route::delete('/students/{student}/photo', [StudentController::class, 'deletePhoto'])->middleware([RoleOrPermissionMiddleware::class . ':admin|superadmin,remove student image']);;
+            
 });

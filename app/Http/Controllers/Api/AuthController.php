@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
 use App\Helpers\ActivityLogger;
 use App\Models\School;
 use App\Models\User;
-
+use Spatie\Permission\Models\Permission;
 
 
 class AuthController extends Controller
@@ -36,16 +36,24 @@ class AuthController extends Controller
 
         $user = Auth::user();
 
-        if ($user->profile_image) {
-            $user->profile_image = url('uploads/images/profile/' . $user->profile_image);
-        }
-        
+        $permissions = $user->getAllPermissions()->pluck('name')->toArray();
+
+        $userData = $user->only([
+            'id', 'name', 'email', 'phone', 'profile_image', 'designation',
+            'address', 'gender', 'dob', 'school_id', 'status', 'created_at', 'updated_at',
+        ]);
+
+        $userData['profile_image'] = $user->profile_image
+            ? url('uploads/images/profile/' . $user->profile_image)
+            : null;
+
         ActivityLogger::log('Login', 'User logged in successfully via API');
 
         return response()->json([
-            'user' => $user,
+            'user' => $userData,
             'token' => $user->createToken('API Token')->plainTextToken,
         ]);
+
     }
 
 
