@@ -29,6 +29,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user/schools', [SchoolController::class, 'getUserSchools']);
     Route::get('/user/search-schools', [SchoolController::class, 'search']);
     Route::get('/schools/{schoolId}/students', [StudentController::class, 'getSchoolStudents']);
+    Route::post('/schools/{schoolId}/authority', [SchoolController::class, 'addAuthority']);
     Route::get('/dashboard', [DashboardController::class, 'show']);
 
     // Permission-restricted routes
@@ -36,5 +37,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/students/upload-photo', [StudentController::class, 'uploadStudentPhoto'])->middleware([RoleOrPermissionMiddleware::class . ':admin|superadmin,upload student image']);
     Route::post('/students', [StudentController::class, 'saveStudent'])->middleware([RoleOrPermissionMiddleware::class . ':admin|superadmin,add student']);
     Route::delete('/students/{student}/photo', [StudentController::class, 'deletePhoto'])->middleware([RoleOrPermissionMiddleware::class . ':admin|superadmin,remove student image']);;
-            
+    
+    Route::get('/all-students', [StudentController::class, 'getAllStudents']);
+
 });

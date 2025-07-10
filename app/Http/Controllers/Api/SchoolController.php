@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\School;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 
 class SchoolController extends Controller
 {
@@ -103,6 +105,28 @@ class SchoolController extends Controller
 
         return response()->json([
             'schools' => $schools->get()
+        ]);
+    }
+
+    public function addAuthority(Request $request, $schoolId)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'address' => 'nullable|string|max:255',
+            'phone' => 'required|unique:users',
+            'email' => 'required|email|unique:users',
+            'password' => 'required|min:8',
+        ]);
+
+        $validated['school_id'] = $schoolId;
+        $validated['password'] = Hash::make($validated['password']);
+        
+        $user = new User($validated);
+
+        $user->save();
+        $user->assignRole('authority');
+        return response()->json([
+            'message' => 'Authority added to school successfully!'
         ]);
     }
 }

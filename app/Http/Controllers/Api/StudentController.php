@@ -57,7 +57,13 @@ class StudentController extends Controller
                 // Optionally log the error
             }
         }
-        $query->orderBy('name');
+
+        if ($request->has('status')) {
+            $query->orderBy('updated_at', 'desc');
+        } else {
+            $query->orderBy('name', 'asc');
+        }
+        
         $perPage = $request->query('per_page', 30);
         $students = $query->select([
             'id', 'name', 'student_code', 'class', 'dob', 'photo', 'school_id', 'updated_at'
@@ -103,6 +109,7 @@ class StudentController extends Controller
         $student->photo = $filename;
         $student->status = 1;
         $student->updated_by = auth()->id();
+        $student->updated_at = now();
         $student->save();
 
         return response()->json([
@@ -182,4 +189,101 @@ class StudentController extends Controller
 
         return response()->json(['message' => 'Photo removed successfully.']);
     }
+
+    public function getAllStudents(Request $request)
+    {
+        $query = Student::select(
+            'students.*',
+            'schools.school_name as school_name',
+            'districts.name as district_name',
+            'blocks.name as block_name',
+            'clusters.name as cluster_name',
+            'users.name as creator_name'
+        )
+        ->leftJoin('schools', 'schools.id', '=', 'students.school_id')
+        ->leftJoin('districts', 'schools.district_id', '=', 'districts.id')
+        ->leftJoin('blocks', 'schools.block_id', '=', 'blocks.id')
+        ->leftJoin('clusters', 'schools.cluster_id', '=', 'clusters.id')
+        ->leftJoin('users', 'students.created_by', '=', 'users.id');
+        
+        if ($request->has('school_id')) {
+            $query->where('students.school_id', $request->school_id);
+        }
+
+        if ($request->has('q')) {
+            $search = strtolower(trim($request->query('q')));
+            $query->where(function ($q) use ($search) {
+                $q->whereRaw('LOWER(students.name) LIKE ?', ["%{$search}%"]);
+            });
+        }
+
+        if ($request->has('status')) {
+            if ($request->status == 'uploaded') {
+                $query->whereNotNull('students.photo')->where('students.photo', '!=', '');
+            } elseif ($request->status == 'not_uploaded') {
+                $query->where(function ($q) {
+                    $q->whereNull('students.photo')->orWhere('students.photo', '');
+                });
+            }
+        }
+
+        if ($request->has('dob')) {
+            $keyword = trim($request->dob);
+
+            if (preg_match('/^\d{2}\/\d{2}\/\d{4}$/', $keyword)) {
+                try {
+                    $date = \Carbon\Carbon::createFromFormat('d/m/Y', $keyword)->format('Y-m-d');
+                    $query->whereDate('students.dob', $date);
+                } catch (\Exception $e) {}
+            } elseif (preg_match('/^\d{2}\/\d{2}$/', $keyword)) {
+                [$day, $month] = explode('/', $keyword);
+                $query->whereRaw("DAY(students.dob) = ? AND MONTH(students.dob) = ?", [$day, $month]);
+            } elseif (preg_match('/^\d{2}\/\d{4}$/', $keyword)) {
+                [$month, $year] = explode('/', $keyword);
+                $query->whereRaw("MONTH(students.dob) = ? AND YEAR(students.dob) = ?", [$month, $year]);
+            } elseif (preg_match('/^\d{4}$/', $keyword)) {
+                $query->whereYear('students.dob', $keyword);
+            }
+        }
+
+        if ($request->has('status')) {
+            $query->orderBy('updated_at', 'desc');
+        } else {
+            $query->orderBy('name', 'asc');
+        }
+
+        $students = $query->orderByDesc('students.id')->paginate($request->per_page ?? 15);
+
+        return response()->json([
+            'students' => $students->map(function ($student) {
+                return [
+                    'id' => $student->id,
+                    'student_code' => $student->student_code,
+                    'name' => $student->name,
+                    'class' => $student->class,
+                    'dob' => $student->dob,
+                    'photo' => $student->photo 
+                        ? asset('uploads/images/students/' . $student->photo)
+                        : null,
+                    'status' => $student->status ? 'uploaded' : 'not_uploaded',
+                    'school_id' => $student->school_id,
+                    'school_name' => $student->school_name,
+                    'updated_at' => optional($student->updated_at)->format('Y-m-d H:i:s'),
+                ];
+            }),
+            'pagination' => [
+                'current_page' => $students->currentPage(),
+                'last_page' => $students->lastPage(),
+                'per_page' => $students->perPage(),
+                'total' => $students->total(),
+                'has_more_pages' => $students->hasMorePages(),
+            ],
+            'permissions' => [
+                'can_upload_image' => auth()->user()->can('upload student image'),
+                'can_remove_image' => auth()->user()->can('remove student image'),
+                'can_add_authority' => auth()->user()->can('add user') && auth()->user()->can('assign school'),
+            ]
+        ]);
+    }
+
 }
