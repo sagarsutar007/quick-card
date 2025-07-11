@@ -43,6 +43,30 @@ class AuthController extends Controller
             'address', 'gender', 'dob', 'school_id', 'status', 'created_at', 'updated_at',
         ]);
 
+        $userData = $user->only([
+            'id',
+            'name',
+            'email',
+            'phone',
+            'profile_image',
+            'designation',
+            'address',
+            'gender',
+            'dob',
+            'school_id',
+            'status',
+            'created_at',
+            'updated_at',
+            'about',
+            'facebook',
+            'twitter',
+            'instagram',
+            'youtube',
+            'whatsapp',
+            'threads',
+            'website',
+        ]);
+
         $userData['profile_image'] = $user->profile_image
             ? url('uploads/images/profile/' . $user->profile_image)
             : null;
